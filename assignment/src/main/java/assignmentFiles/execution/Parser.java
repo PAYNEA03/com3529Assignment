@@ -15,22 +15,49 @@ import java.util.List;
 
 public class Parser {
 
-//    private static final String FILE_PATH = "src/main/java/assignmentFiles/subjectFiles/Triangle.java";
-    private static final String FILE_PATH = "src/main/java/assignmentFiles/subjectFiles/BMICalculator.java";
-//    private static final String FILE_PATH = "src/main/java/assignmentFiles/subjectFiles/Calendar.java";
-//    private static final String FILE_PATH = "src/main/java/assignmentFiles/subjectFiles/VendingMachine.java";
+    private static final String[] FILE_PATH = {
+            "src/main/java/assignmentFiles/subjectFiles/Triangle.java",
+            "src/main/java/assignmentFiles/subjectFiles/BMICalculator.java",
+            "src/main/java/assignmentFiles/subjectFiles/Calendar.java",
+            "src/main/java/assignmentFiles/subjectFiles/VendingMachine.java",
+            "src/main/java/assignmentFiles/subjectFiles/SignUtils.java"
+    };
 
 
     public static void main(String[]args) throws Exception {
-        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH));
 
-//traverses the file whilst keeping a record of occurrences
-        List<HashMap> ifStmt = new ArrayList<>();
-        VoidVisitor<List<HashMap>> ifStmtCollector = new IfStmtCollector();
 
-        ifStmtCollector.visit(cu, ifStmt);
-        ifStmt.forEach(n ->
-                System.out.println(n));
+        for (String file: FILE_PATH) {
+            System.out.println("");
+            System.out.println("File to be parsed: " + file);
+
+            // Parse File using Java Parser
+            CompilationUnit cu = StaticJavaParser.parse(new File(file));
+
+            /**
+             * Javaparser visitor for if and else statements, returns a hasmap with details of the conditions
+            * */
+            List<HashMap> ifStmt = new ArrayList<>();
+            VoidVisitor<List<HashMap>> ifStmtCollector = new IfStmtCollector();
+
+            ifStmtCollector.visit(cu, ifStmt);
+            ifStmt.forEach(n ->
+                    System.out.println(n));
+
+
+            /**
+             * Javaparser visitor for method declarations, returns a hashmap with method names and their params
+             * */
+
+
+
+
+
+
+            System.out.println("");
+        }
+
+
     }
 
 
@@ -89,6 +116,9 @@ public class Parser {
         }
 
     }
+
+
+
 
 
 
