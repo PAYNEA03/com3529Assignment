@@ -3,6 +3,8 @@ package assignmentFiles.execution;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 
+import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.visitor.VoidVisitor;
@@ -49,6 +51,12 @@ public class Parser {
              * Javaparser visitor for method declarations, returns a hashmap with method names and their params
              * */
 
+            List<HashMap> methodNames = new ArrayList<>();
+            VoidVisitor<List<HashMap>> methodCollector = new MethodCollector();
+
+            methodCollector.visit(cu, methodNames);
+            methodNames.forEach(n ->
+                    System.out.println(n));
 
 
 
@@ -113,6 +121,40 @@ public class Parser {
             */
 
             return elseStmt;
+        }
+
+    }
+
+    private static class MethodCollector extends VoidVisitorAdapter<List<HashMap>> {
+        @Override
+        public void visit(MethodDeclaration md, List<HashMap> collector) {
+            super.visit(md, collector);
+
+            collector.add(parseMethod(md));
+        }
+
+        /**
+         * Creates a hashmap of methods by name, each method name contains a list of hash maps
+         * with the parameter details. main HashMap returned
+         * */
+        public static HashMap<String, List> parseMethod(MethodDeclaration md) {
+            HashMap<String, List> methodList = new HashMap<>();
+
+            List<HashMap> parameterList = new ArrayList<>();
+
+            List<Parameter> list = md.getParameters();
+            for(Parameter p:list){
+                HashMap<String, Object> methodDetails = new HashMap<>();
+//                methodDetails.put("methodObject", md);
+                methodDetails.put("paramName", p.getName());
+                methodDetails.put("paramType", p.getType());
+                methodDetails.put("paramLineStart", p.getBegin().get().line);
+                parameterList.add(methodDetails);
+            }
+
+            methodList.put(md.getNameAsString(), parameterList);
+
+            return methodList;
         }
 
     }
