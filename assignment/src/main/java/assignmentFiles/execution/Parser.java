@@ -58,10 +58,6 @@ public class Parser {
             methodNames.forEach(n ->
                     System.out.println(n));
 
-
-
-
-
             System.out.println("");
         }
 
