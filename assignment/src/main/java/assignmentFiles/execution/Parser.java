@@ -5,6 +5,8 @@ import com.github.javaparser.ast.CompilationUnit;
 
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.comments.Comment;
+import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.visitor.VoidVisitor;
@@ -36,6 +38,7 @@ public class Parser {
             // Parse File using Java Parser
             CompilationUnit cu = StaticJavaParser.parse(new File(file));
 
+
             /**
              * Javaparser visitor for if and else statements, returns a hasmap with details of the conditions
             * */
@@ -46,6 +49,11 @@ public class Parser {
             ifStmt.forEach(n ->
                     System.out.println(n));
 
+//            for (HashMap h:ifStmt) {
+//                IfStmt i = (IfStmt) h.get("object");
+//
+//                System.out.println(i);
+//            }
 
             /**
              * Javaparser visitor for method declarations, returns a hashmap with method names and their params
@@ -95,7 +103,7 @@ public class Parser {
             ifStmt.put("lineStart", n.getBegin().get().line);
             ifStmt.put("lineEnd", n.getEnd().get().line);
             ifStmt.put("conditions", n.getCondition());
-
+            ifStmt.put("object", n);
 /*
           @TODO
             ifStmt.put("object", n); stores the full object for later access. Not in use whilst debugging
@@ -112,6 +120,7 @@ public class Parser {
             elseStmt.put("type", "ELSE");
             elseStmt.put("lineStart", n.getBegin().get().line);
             elseStmt.put("lineEnd", n.getEnd().get().line);
+
 
             /* @TODO elseStmt.put("object", n); stores the full object for later access. Not in use whilst debugging
             */
