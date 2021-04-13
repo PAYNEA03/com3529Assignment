@@ -17,6 +17,8 @@ import java.util.List;
 
 public class Instrument {
 
+    public static int branchCount = 0;
+
     public static void parse(CompilationUnit cu) {
 
         // get class name
@@ -25,7 +27,7 @@ public class Instrument {
         classNameVisitor.visit(cu,className);
 
         // set param to instrument into class
-        String[] param = {"Set<Integer>", "coveredBranches", "coveredBranch(1, coveredBranches)"};
+        String[] param = {"Set<Integer>", "coveredBranches"};
 
         //parse methods in class
         VoidVisitor methodParser = new Instrument.MethodParser();
@@ -41,6 +43,8 @@ public class Instrument {
 
         // write instrumented file
         writeInstrumentedFile(cu, className);
+
+        System.out.println(branchCount);
 
 
     }
@@ -98,20 +102,27 @@ public class Instrument {
 
             convertIfStmt(md);
 
-            parseIfStmt(md, param);
+            parseIfStmt(md);
 
             if (md.hasElseBlock()){
-                parseElse(md.getElseStmt().get(), param);
+                parseElse(md.getElseStmt().get());
             }
 
         }
 
-        private static void parseIfStmt(IfStmt n, String[] param) {
-            n.getThenStmt().asBlockStmt().addStatement(0, new NameExpr(param[2]));
+        private static void parseIfStmt(IfStmt n) {
+            n.getThenStmt().asBlockStmt().addStatement(1, new NameExpr(addBranch()));
         }
 
-        private static void parseElse(Statement n, String[] param) {
-            n.asBlockStmt().addStatement(0, new NameExpr(param[2]));
+        private static void parseElse(Statement n) {
+            n.asBlockStmt().addStatement(1, new NameExpr(addBranch()));
+        }
+
+        private static String addBranch() {
+            ++branchCount;
+            String branch = "coveredBranch(" + branchCount + ", coveredBranches)";
+
+            return branch;
         }
 
 
