@@ -1,5 +1,6 @@
 package assignmentFiles.execution;
 
+//import assignmentFiles.instrumentedFiles.*;
 import assignmentFiles.subjectFiles.Triangle;
 
 import java.util.Random;
@@ -12,29 +13,38 @@ public class TestDataGenerator {
     static final int MIN_INT = -10;
     static final int MAX_INT = 10;
 
-    public static void randomGeneration() {
+    public static void randomBranchGeneration() {
 
-//        Random r = new Random();
-//        Set<Integer> coveredBranches = new TreeSet<>();
-//
-//        for (int i=0; i < ITERATIONS; i ++) {
+        Random r = new Random();
+        Set<Integer> coveredBranches = new TreeSet<>();
+
+        for (int i=0; i < ITERATIONS; i ++) {
+
+//            @todo get methods to test
+//              * create variables for that methods parameters
+//              * call method with variables
 //            int side1 = randomInt(r);
 //            int side2 = randomInt(r);
 //            int side3 = randomInt(r);
 //            System.out.println((i+1) + ": [" + side1 + ", " + side2 + ", " + side3 + "]");
 //            Triangle.Type result = instrumentedClassify(side1, side2, side3, coveredBranches);
 //            System.out.println("-> " + result);
-//
-//        }
-//        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-//        System.out.println("Branch Coverage: " + coveredBranches.size() + "/14");
-//        System.out.println("Covered Branch IDs: " + coveredBranches);
-//        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-//
+            Object var = 2;
+
+//            InstrumentedCalendar.daysBetweenTwoDates(var,var,var,var,var,var,var);
+        }
+
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+        System.out.println("Branch Coverage: " + coveredBranches.size() + "/14");
+        System.out.println("Covered Branch IDs: " + coveredBranches);
+        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
 
     }
 
+    public static void searchBasedGeneration() {
 
+    }
 
     /** randomInt is taken from the week5 lectures of the RandomlyTestTriangle class and
      * has not been changed in any form
@@ -50,15 +60,11 @@ public class TestDataGenerator {
     /** coveredBranch is taken from the week5 lectures of the RandomlyTestTriangle class and
      * has not been changed in any form
      * */
-    static void coveredBranch(int id, Set<Integer> coveredBranches) {
+    public static void coveredBranch(int id, Set<Integer> coveredBranches) {
         if (!coveredBranches.contains(id)) {
             System.out.println("* covered new branch: " + id);
             coveredBranches.add(id);
         }
-    }
-
-    public static void searchBasedGeneration() {
-
     }
 
 }

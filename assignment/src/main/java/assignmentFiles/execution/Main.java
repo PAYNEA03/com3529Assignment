@@ -3,6 +3,7 @@ package assignmentFiles.execution;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.visitor.VoidVisitor;
+import org.junit.Test;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -23,18 +24,18 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[2]));
+        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[0]));
 
 //        @todo 4.1: analyse methods, obtain predicates and conditions.
 
 //        @todo 4.1.2/4.3: using obtained methods and predicates, create an instrumented file with
-//          logging statements (log on each line + extra condition in method for treeSet, needs to
-//          happen when parsing file, not when writing/instrumenting)
+//          logging statements
 
         Instrument.parse(cu);
 
-
 //        @todo 4.2: generate test requirements (branch coverage/MCDC)
+
+        TestDataGenerator.randomBranchGeneration();
 
 //        @todo 4.4 generate test data.
 

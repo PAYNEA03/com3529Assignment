@@ -28,7 +28,7 @@ public class RandomlyTestTriangle {
             int side2 = randomInt(r);
             int side3 = randomInt(r);
             System.out.println((i+1) + ": [" + side1 + ", " + side2 + ", " + side3 + "]");
-            Type result = instrumentedClassify(side1, side2, side3, coveredBranches);
+            Object result = instrumentedClassify(side1, side2, side3, coveredBranches);
             System.out.println("-> " + result);
 
         }
