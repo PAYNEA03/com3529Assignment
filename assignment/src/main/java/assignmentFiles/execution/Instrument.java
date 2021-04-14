@@ -26,7 +26,7 @@ public class Instrument {
 
     public static int branchCount = 0;
 
-    public static void parse(CompilationUnit cu) {
+    public static void parseClass(CompilationUnit cu) {
 
         // get class name
         List<String> className = new ArrayList<>();
@@ -114,17 +114,20 @@ public class Instrument {
             methodNameCollector.visit(md.findCompilationUnit().get(),methodNames);
 
             // add arg to list of parameters in all methods
-            md.addParameter(param[0], param[1]);
+            md.addParameter("Set<Integer>", "coveredBranches");
 
             //add parameter arg to all method calls in class
             VoidVisitor methodCall = new Instrument.MethodCallVisitor();
             md.accept(methodCall,methodNames);
 
 
+
             HashMap<String, List> methodList = new HashMap<>();
+
             List<HashMap> parameterList = new ArrayList<>();
-            List<Parameter> list = md.getParameters();
-            for(Parameter p:list){
+
+            List<Parameter> methodParameters = md.getParameters();
+            for(Parameter p:methodParameters){
                 HashMap<String, Object> methodDetails = new HashMap<>();
                 methodDetails.put("paramName", p.getName());
                 methodDetails.put("paramType", p.getType());
@@ -139,7 +142,6 @@ public class Instrument {
     private static class MethodCallVisitor extends VoidVisitorAdapter<List<String>> {
         @Override
         public void visit(MethodCallExpr n, List<String> methodNames) {
-//            if (n.getNameAsString().equals(methodName)) {
             if (methodNames.contains(n.getNameAsString())) {
                 n.addArgument("coveredBranches");
             }

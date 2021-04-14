@@ -24,14 +24,14 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[1]));
+        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[3]));
 
 //        @todo 4.1: analyse methods, obtain predicates and conditions.
 
 //        @todo 4.1.2/4.3: using obtained methods and predicates, create an instrumented file with
 //          logging statements
 
-        Instrument.parse(cu);
+        Instrument.parseClass(cu);
 
 //        @todo 4.2: generate test requirements (branch coverage/MCDC)
 

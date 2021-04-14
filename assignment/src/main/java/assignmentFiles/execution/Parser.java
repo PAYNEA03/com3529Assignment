@@ -40,8 +40,7 @@ public class Parser {
         methodNameCollector.visit(cu,methodNames);
         methodNames.forEach(n->System.out.println("MethodNameCollected:"+n));
 
-//        VoidVisitor<Void> mcv = new MethodCaVisitor();
-//        mcv.visit(cu,null);
+
 
     }
 
