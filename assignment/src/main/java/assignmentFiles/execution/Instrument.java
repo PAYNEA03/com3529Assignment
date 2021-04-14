@@ -13,14 +13,24 @@ import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
+
 
 
 public class Instrument {
 
     public static int branchCount = 0;
     public static int conditionCount = 0;
+
+    public static BinaryExpr.Operator[] operators = {
+            BinaryExpr.Operator.PLUS,
+            BinaryExpr.Operator.MINUS,
+            BinaryExpr.Operator.MULTIPLY,
+            BinaryExpr.Operator.DIVIDE,
+            BinaryExpr.Operator.REMAINDER
+    };
 
 
     public static void parseClass(CompilationUnit cu) {
@@ -161,36 +171,40 @@ public class Instrument {
     }
 
     private static void recursiveConditionParser(Expression expr) {
+
+        List<BinaryExpr.Operator> operatorList = new ArrayList<>(Arrays.asList(operators));
+
 //        check if expression is binary ( (x>y), etc)
         if (expr instanceof BinaryExpr) {
             BinaryExpr child = (BinaryExpr) expr;
             NameExpr leftInstrument;
             NameExpr rightInstrument;
 
-//            if left condition is binary ( (x>y), etc) explore further, else add expression
+//            if left condition is binary ( (x>y), etc) explore further, else add expression. dont want to explore method
+//            calls further as know they have not operators so bypassed if isMethodCallExpr is true
             if (!child.getLeft().isMethodCallExpr()) {
-
                 if (child.getLeft().isNameExpr()) {
-                    leftInstrument = addConditionLogger(child.toString());
-                    child.replace(leftInstrument);
+//                    checks if operator is boolean return
+                    if (!operatorList.contains(child.getOperator())) {
+                        leftInstrument = addConditionLogger(child.toString());
+                        child.replace(leftInstrument);
+                    }
 
                 } else {
-                    System.out.println("recursive call " + child.getLeft());
                     recursiveConditionParser(child.getLeft());
                 }
             }
 
-            if (!child.getLeft().isMethodCallExpr()) {
-
+            if (!child.getRight().isMethodCallExpr()) {
 
 //            if RIGHT condition is binary ( (x>y), etc) explore further, else print expression
                 if (child.getRight().isNameExpr()) {
-                    System.out.println("right child name " + child.getRight());
-                    rightInstrument = addConditionLogger(child.toString());
-                    child.replace(rightInstrument);
+                    if (!operatorList.contains(child.getOperator())) {
+                        rightInstrument = addConditionLogger(child.toString());
+                        child.replace(rightInstrument);
+                    }
 
                 } else {
-                    System.out.println("recursive call " + child.getRight());
                     recursiveConditionParser(child.getRight());
                 }
 

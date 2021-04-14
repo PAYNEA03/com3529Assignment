@@ -2,6 +2,7 @@ package assignmentFiles.execution;
 
 //import assignmentFiles.instrumentedFiles.*;
 import assignmentFiles.subjectFiles.Triangle;
+import com.github.javaparser.ast.expr.Expression;
 
 import java.util.Random;
 import java.util.Set;
@@ -68,7 +69,8 @@ public class TestDataGenerator {
     }
 
 //    @todo see assignment brief, mentioned this may be needed for Search based method?
-    public static boolean logCondition(int id, boolean condition) {
+    public static boolean logCondition(int id, Boolean condition) {
+        System.out.println(condition);
         boolean result = condition;
         // ... log the id somewhere, along with the result,
         // thereby storing whether the condition was executed
