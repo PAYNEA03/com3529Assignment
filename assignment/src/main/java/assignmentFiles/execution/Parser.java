@@ -23,13 +23,27 @@ import java.util.Set;
 import java.util.TreeSet;
 
 public class Parser {
+    private static final String[] FILE_PATH = {
+            "src/main/java/assignmentFiles/subjectFiles/Triangle.java",
+            "src/main/java/assignmentFiles/subjectFiles/BMICalculator.java",
+            "src/main/java/assignmentFiles/subjectFiles/Calendar.java",
+            "src/main/java/assignmentFiles/subjectFiles/VendingMachine.java",
+            "src/main/java/assignmentFiles/subjectFiles/SignUtils.java"
+    };
+    public static void main(String[] args) throws Exception {
 
+        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[1]));
 
-    /**
-     * ifStmtCollector
-     * passes in a list object and adding criteria to the list and returning the obejct
-     * */
+        List<HashMap> methodNames = new ArrayList<>();
+        VoidVisitor<List<HashMap>> methodNameCollector = new MethodCollector();
 
+        methodNameCollector.visit(cu,methodNames);
+        methodNames.forEach(n->System.out.println("MethodNameCollected:"+n));
+
+//        VoidVisitor<Void> mcv = new MethodCaVisitor();
+//        mcv.visit(cu,null);
+
+    }
 
     public static class IfStmtCollector extends VoidVisitorAdapter<List<HashMap>> {
         @Override
@@ -105,24 +119,24 @@ public class Parser {
 
     }
 
-//    public static class MethodCallVisitor extends VoidVisitorAdapter<Void> {
-//        @Override
-//        public void visit(MethodCallExpr n, Void arg) {
-//            // Found a method call
-//            System.out.println(n.getBegin() + " - " + n.getName() + " - " + n.getArguments());
-//            n.addArgument("testarg");
-//            System.out.println("Parserd: " + n.getBegin() + " - " + n.getName() + " - " + n.getArguments());
-//
-//            // Don't forget to call super, it may find more method calls inside the arguments of this method call, for example.
-//            super.visit(n, arg);
-//        }
-//    }
+    public static class MethodCaVisitor extends VoidVisitorAdapter<Void> {
+        @Override
+        public void visit(MethodCallExpr n, Void arg) {
+            super.visit(n, arg);
+
+            // Found a method call
+//            System.out.println(n.getBegin().get() + " - " + n.getName() + " - " + n.getArguments());
+            System.out.println(n.getName());
+
+            // Don't forget to call super, it may find more method calls inside the arguments of this method call, for example.
+        }
+    }
 
     public static class MethodCollector extends VoidVisitorAdapter<List<HashMap>> {
         @Override
         public void visit(MethodDeclaration md, List<HashMap> collector) {
             super.visit(md, collector);
-
+            System.out.println(md.getNameAsString());
             collector.add(parseMethod(md));
         }
 
@@ -141,22 +155,12 @@ public class Parser {
 //            VoidVisitor methodCall = new Parser.MethodCallVisitor();
 //            md.accept(methodCall,null);
 
-//          add expression to method body
-//          System.out.println(md.getBody().get().addStatement("System.out.println(\"Hello World\");"));
-//          System.out.println(md.getBody().get().addStatement(0, new NameExpr("System.out.println(\"Hello World\")")));
-
-
-            List<HashMap> ifStmt = new ArrayList<>();
-            VoidVisitor<List<HashMap>> ifStmtCollector = new Parser.IfStmtCollector();
-
-            ifStmtCollector.visit(md,ifStmt);
-//            IfStmtCollector.parseIf(md.getBody().get().asBlockStmt());
 
             for(Parameter p:list){
                 HashMap<String, Object> methodDetails = new HashMap<>();
-//                methodDetails.put("methodObject", md);
                 methodDetails.put("paramName", p.getName());
                 methodDetails.put("paramType", p.getType());
+                methodDetails.put("ifBranch", md.getBody().get().getStatements().contains("if"));
 //                methodDetails.put("paramLineStart", p.getBegin().get().line);
                 parameterList.add(methodDetails);
             }

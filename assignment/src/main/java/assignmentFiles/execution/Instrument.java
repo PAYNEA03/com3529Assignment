@@ -17,6 +17,7 @@ import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -34,6 +35,7 @@ public class Instrument {
         // set param to instrument into class
         String[] param = {"Set<Integer>", "coveredBranches"};
 
+
         //parse methods in class
         VoidVisitor methodParser = new Instrument.MethodParser();
         methodParser.visit(cu, param);
@@ -50,9 +52,6 @@ public class Instrument {
         writeInstrumentedFile(cu, className);
 
 
-        System.out.println(branchCount);
-
-
     }
 
     private static void createMethod(ClassOrInterfaceDeclaration type) {
@@ -64,8 +63,6 @@ public class Instrument {
                 .setBody(new BlockStmt()
                         .addStatement(new NameExpr("String out"))
                         .addStatement(new NameExpr("String out2")));
-
-        System.out.println(method);
 
     }
 
@@ -96,26 +93,43 @@ public class Instrument {
         }
     }
 
+    public static class MethodNameCollector extends VoidVisitorAdapter<List<String>> {
+        @Override
+        public void visit(MethodDeclaration md, List<String> collector) {
+            super.visit(md, collector);
+            collector.add(md.getNameAsString());
+        }
+    }
+
+
     private static class MethodParser extends VoidVisitorAdapter<String[]> {
         @Override
         public void visit(MethodDeclaration md, String[] param) {
             super.visit(md, param);
+
+//            gets list of methodNames in class
+            List<String> methodNames = new ArrayList<>();
+            VoidVisitor<List<String>> methodNameCollector = new MethodNameCollector();
+            methodNameCollector.visit(md.findCompilationUnit().get(),methodNames);
 
             // add arg to list of parameters in all methods
             md.addParameter(param[0], param[1]);
 
             //add parameter arg to all method calls in class
             VoidVisitor methodCall = new Instrument.MethodCallVisitor();
-            md.accept(methodCall,param);
+            md.accept(methodCall,methodNames);
 
         }
     }
 
-    private static class MethodCallVisitor extends VoidVisitorAdapter<String[]> {
+    private static class MethodCallVisitor extends VoidVisitorAdapter<List<String>> {
         @Override
-        public void visit(MethodCallExpr n, String[] param) {
-            n.addArgument(param[1]);
-            super.visit(n, param);
+        public void visit(MethodCallExpr n, List<String> methodNames) {
+//            if (n.getNameAsString().equals(methodName)) {
+            if (methodNames.contains(n.getNameAsString())) {
+                n.addArgument("coveredBranches");
+            }
+            super.visit(n, methodNames);
         }
     }
 

@@ -24,7 +24,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[0]));
+        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[1]));
 
 //        @todo 4.1: analyse methods, obtain predicates and conditions.
 
@@ -35,7 +35,7 @@ public class Main {
 
 //        @todo 4.2: generate test requirements (branch coverage/MCDC)
 
-        TestDataGenerator.randomBranchGeneration();
+//        TestDataGenerator.randomBranchGeneration();
 
 //        @todo 4.4 generate test data.
 
