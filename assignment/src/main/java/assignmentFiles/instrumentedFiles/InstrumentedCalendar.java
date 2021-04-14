@@ -66,7 +66,7 @@ public class InstrumentedCalendar {
             if (TestDataGenerator.logCondition(22, year1 == year2)) {
                 TestDataGenerator.coveredBranch(11, coveredBranches);
                 int month = month1 + 1;
-                while (month < month2) {
+                while (TestDataGenerator.logCondition(33, month < month2)) {
                     TestDataGenerator.coveredBranch(18, coveredBranches);
                     days += daysInMonth(month, year1, coveredBranches);
                     month++;
@@ -75,19 +75,19 @@ public class InstrumentedCalendar {
                 TestDataGenerator.coveredBranch(12, coveredBranches);
                 int year;
                 int month = month1 + 1;
-                while (month <= 12) {
+                while (TestDataGenerator.logCondition(28, month <= 12)) {
                     TestDataGenerator.coveredBranch(15, coveredBranches);
                     days += daysInMonth(month, year1, coveredBranches);
                     month++;
                 }
                 month = 1;
-                while (month < month2) {
+                while (TestDataGenerator.logCondition(29, month < month2)) {
                     TestDataGenerator.coveredBranch(16, coveredBranches);
                     days += daysInMonth(month, year2, coveredBranches);
                     month++;
                 }
                 year = year1 + 1;
-                while (year < year2) {
+                while (TestDataGenerator.logCondition(31, year < year2)) {
                     TestDataGenerator.coveredBranch(17, coveredBranches);
                     days += 365;
                     if (TestDataGenerator.logCondition(21, isLeapYear(year, coveredBranches))) {

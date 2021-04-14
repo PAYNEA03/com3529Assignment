@@ -209,7 +209,7 @@ public class Instrument {
                 }
 
             }
-        //enclosed expression is in brackets, so (x > r) instead of x > r, converts then recalls method
+        //enclosed expression is in brackets, so (x > r) instead of x > r, converts then re-calls method
         } else if (expr instanceof EnclosedExpr) {
             EnclosedExpr enclosedChild = (EnclosedExpr) expr;
             BinaryExpr parsed = enclosedChild.getInner().asBinaryExpr();
@@ -224,6 +224,12 @@ public class Instrument {
             super.visit(md, args);
 
             md.getBody().asBlockStmt().addStatement(0, new NameExpr(addBranchLogger()));
+
+            if( md.getCondition().isBinaryExpr()) {
+                recursiveConditionParser(md.getCondition().asBinaryExpr());
+            } else {
+                md.setCondition(addConditionLogger(md.getCondition().toString()));
+            }
         }
 
     }
