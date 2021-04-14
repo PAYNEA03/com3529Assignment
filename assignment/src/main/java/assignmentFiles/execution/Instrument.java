@@ -1,13 +1,14 @@
 package assignmentFiles.execution;
 
-import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.Modifier;
-import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.expr.BinaryExpr;
+
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
@@ -25,6 +26,8 @@ import java.util.List;
 public class Instrument {
 
     public static int branchCount = 0;
+    public static int conditionCount = 0;
+
 
     public static void parseClass(CompilationUnit cu) {
 
@@ -36,16 +39,16 @@ public class Instrument {
         // set param to instrument into class
         String[] param = {"Set<Integer>", "coveredBranches"};
 
-
-        //parse methods in class
+        //instrument methods in class
+        HashMap<String, List> methodDetail = new HashMap<>();
         VoidVisitor methodParser = new Instrument.MethodParser();
-        methodParser.visit(cu, param);
+        methodParser.visit(cu, methodDetail);
 
-        //parse if statements
+        //instrument if statements
         VoidVisitor ifStmtParser = new Instrument.IfStmtParser();
         ifStmtParser.visit(cu,param);
 
-        // parse while statements
+        // instrument while statements
         VoidVisitor whileStmtParser = new Instrument.WhileStmtParser();
         whileStmtParser.visit(cu,null);
 
@@ -103,39 +106,38 @@ public class Instrument {
     }
 
 
-    private static class MethodParser extends VoidVisitorAdapter<String[]> {
+    private static class MethodParser extends VoidVisitorAdapter<HashMap<String, List>> {
         @Override
-        public void visit(MethodDeclaration md, String[] param) {
-            super.visit(md, param);
-
+        public void visit(MethodDeclaration md, HashMap<String, List> methodList) {
+            super.visit(md, methodList);
 //            gets list of methodNames in class
             List<String> methodNames = new ArrayList<>();
             VoidVisitor<List<String>> methodNameCollector = new MethodNameCollector();
             methodNameCollector.visit(md.findCompilationUnit().get(),methodNames);
 
-            // add arg to list of parameters in all methods
-            md.addParameter("Set<Integer>", "coveredBranches");
+//            all parameters found in method
+            List<Parameter> methodParameters = md.getParameters();
 
-            //add parameter arg to all method calls in class
-            VoidVisitor methodCall = new Instrument.MethodCallVisitor();
-            md.accept(methodCall,methodNames);
-
-
-
-            HashMap<String, List> methodList = new HashMap<>();
-
+//           parameter list builder
             List<HashMap> parameterList = new ArrayList<>();
 
-            List<Parameter> methodParameters = md.getParameters();
+//            populate parameter list details
             for(Parameter p:methodParameters){
                 HashMap<String, Object> methodDetails = new HashMap<>();
                 methodDetails.put("paramName", p.getName());
                 methodDetails.put("paramType", p.getType());
                 parameterList.add(methodDetails);
             }
-
+//            add parameter details and method name to main method list
             methodList.put(md.getNameAsString(), parameterList);
-            System.out.println(methodList);
+
+//            parse method instrumentations
+            // add arg to list of parameters in all methods
+            md.addParameter("Set<Integer>", "coveredBranches");
+
+            //add parameter arg to all method calls in class
+            VoidVisitor methodCall = new Instrument.MethodCallVisitor();
+            md.accept(methodCall,methodNames);
         }
     }
 
@@ -149,11 +151,52 @@ public class Instrument {
         }
     }
 
-    private static String addBranch() {
+    private static String addBranchLogger() {
         ++branchCount;
         String branch = "TestDataGenerator.coveredBranch(" + branchCount + ", coveredBranches)";
 
         return branch;
+    }
+
+    private static String addConditionLogger(String stmt) {
+        conditionCount++;
+        String condition = "TestDataGenerator.logCondition(" + conditionCount + ", " + stmt + ")";
+        return condition;
+    }
+
+    private static void recursiveConditionParser(Expression expr) {
+//        check if expression is binary ( (x>y), etc)
+        System.out.println("");
+        System.out.println("Expression: " + expr);
+
+        
+        if (expr instanceof BinaryExpr) {
+            BinaryExpr child = (BinaryExpr) expr;
+//            if left is binary ( (x>y), etc) explore further, else print expression
+            if (child.getLeft() instanceof BinaryExpr) {
+                System.out.println("**recursive call**");
+                recursiveConditionParser(child.getLeft());
+            } else if (child.getLeft().isNameExpr()) {
+                System.out.println(addConditionLogger(child.toString()));
+            } else {
+                System.out.println(addConditionLogger(child.getLeft().toString()));
+            }
+//            if RIGHT is binary ( (x>y), etc) explore further, else print expression
+
+            if (child.getRight() instanceof BinaryExpr) {
+                System.out.println("**recursive call**");
+                recursiveConditionParser(child.getRight());
+            } else if (child.getRight().isNameExpr()) {
+                System.out.println(addConditionLogger(child.toString()));
+            } else {
+                System.out.println(addConditionLogger(child.getRight().toString()));
+            }
+
+        } else {
+            System.out.println("NOT BINARY: " + expr);
+        }
+
+
     }
 
     private static class WhileStmtParser extends VoidVisitorAdapter<Void> {
@@ -161,7 +204,7 @@ public class Instrument {
         public void visit(WhileStmt md, Void args) {
             super.visit(md, args);
 
-            md.getBody().asBlockStmt().addStatement(0, new NameExpr(addBranch()));
+            md.getBody().asBlockStmt().addStatement(0, new NameExpr(addBranchLogger()));
         }
 
     }
@@ -181,11 +224,16 @@ public class Instrument {
         }
 
         private static void parseIfStmt(IfStmt n) {
-            n.getThenStmt().asBlockStmt().addStatement(0, new NameExpr(addBranch()));
+            n.getThenStmt().asBlockStmt().addStatement(0, new NameExpr(addBranchLogger()));
+            if( n.getCondition().isBinaryExpr()) {
+                recursiveConditionParser(n.getCondition().asBinaryExpr());
+            } else {
+                n.setCondition(new NameExpr(addConditionLogger(n.getCondition().toString())));
+            }
         }
 
         private static void parseElse(Statement n) {
-            n.asBlockStmt().addStatement(0, new NameExpr(addBranch()));
+            n.asBlockStmt().addStatement(0, new NameExpr(addBranchLogger()));
         }
 
 

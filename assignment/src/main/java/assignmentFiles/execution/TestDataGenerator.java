@@ -67,4 +67,13 @@ public class TestDataGenerator {
         }
     }
 
+//    @todo see assignment brief, mentioned this may be needed for Search based method?
+    public static boolean logCondition(int id, boolean condition) {
+        boolean result = condition;
+        // ... log the id somewhere, along with the result,
+        // thereby storing whether the condition was executed
+        // as true or false, for computing coverage later on...
+        return result;
+    }
+
 }

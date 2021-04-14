@@ -90,7 +90,7 @@ public class InstrumentedCalendar {
                 while (year < year2) {
                     TestDataGenerator.coveredBranch(17, coveredBranches);
                     days += 365;
-                    if (isLeapYear(year, coveredBranches)) {
+                    if (TestDataGenerator.logCondition(20, isLeapYear(year, coveredBranches))) {
                         TestDataGenerator.coveredBranch(10, coveredBranches);
                         days++;
                     }
