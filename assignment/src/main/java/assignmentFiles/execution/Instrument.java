@@ -7,6 +7,7 @@ import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
+import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.MethodCallExpr;
 import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.stmt.BlockStmt;
@@ -119,6 +120,19 @@ public class Instrument {
             VoidVisitor methodCall = new Instrument.MethodCallVisitor();
             md.accept(methodCall,methodNames);
 
+
+            HashMap<String, List> methodList = new HashMap<>();
+            List<HashMap> parameterList = new ArrayList<>();
+            List<Parameter> list = md.getParameters();
+            for(Parameter p:list){
+                HashMap<String, Object> methodDetails = new HashMap<>();
+                methodDetails.put("paramName", p.getName());
+                methodDetails.put("paramType", p.getType());
+                parameterList.add(methodDetails);
+            }
+
+            methodList.put(md.getNameAsString(), parameterList);
+            System.out.println(methodList);
         }
     }
 
