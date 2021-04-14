@@ -24,7 +24,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[2]));
+        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[1]));
 
 //        @todo 4.1: analyse methods, obtain predicates and conditions.
 

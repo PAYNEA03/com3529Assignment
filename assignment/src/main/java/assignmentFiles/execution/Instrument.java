@@ -6,15 +6,9 @@ import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
-import com.github.javaparser.ast.expr.BinaryExpr;
+import com.github.javaparser.ast.expr.*;
 
-import com.github.javaparser.ast.expr.Expression;
-import com.github.javaparser.ast.expr.MethodCallExpr;
-import com.github.javaparser.ast.expr.NameExpr;
-import com.github.javaparser.ast.stmt.BlockStmt;
-import com.github.javaparser.ast.stmt.IfStmt;
-import com.github.javaparser.ast.stmt.Statement;
-import com.github.javaparser.ast.stmt.WhileStmt;
+import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
@@ -158,44 +152,55 @@ public class Instrument {
         return branch;
     }
 
-    private static String addConditionLogger(String stmt) {
+    private static NameExpr addConditionLogger(String stmt) {
         conditionCount++;
         String condition = "TestDataGenerator.logCondition(" + conditionCount + ", " + stmt + ")";
-        return condition;
+        NameExpr newCondition = new NameExpr(condition);
+
+        return newCondition;
     }
 
     private static void recursiveConditionParser(Expression expr) {
 //        check if expression is binary ( (x>y), etc)
-        System.out.println("");
-        System.out.println("Expression: " + expr);
-
-        
         if (expr instanceof BinaryExpr) {
             BinaryExpr child = (BinaryExpr) expr;
-//            if left is binary ( (x>y), etc) explore further, else print expression
-            if (child.getLeft() instanceof BinaryExpr) {
-                System.out.println("**recursive call**");
-                recursiveConditionParser(child.getLeft());
-            } else if (child.getLeft().isNameExpr()) {
-                System.out.println(addConditionLogger(child.toString()));
-            } else {
-                System.out.println(addConditionLogger(child.getLeft().toString()));
-            }
-//            if RIGHT is binary ( (x>y), etc) explore further, else print expression
+            NameExpr leftInstrument;
+            NameExpr rightInstrument;
 
-            if (child.getRight() instanceof BinaryExpr) {
-                System.out.println("**recursive call**");
-                recursiveConditionParser(child.getRight());
-            } else if (child.getRight().isNameExpr()) {
-                System.out.println(addConditionLogger(child.toString()));
-            } else {
-                System.out.println(addConditionLogger(child.getRight().toString()));
+//            if left condition is binary ( (x>y), etc) explore further, else add expression
+            if (!child.getLeft().isMethodCallExpr()) {
+
+                if (child.getLeft().isNameExpr()) {
+                    leftInstrument = addConditionLogger(child.toString());
+                    child.replace(leftInstrument);
+
+                } else {
+                    System.out.println("recursive call " + child.getLeft());
+                    recursiveConditionParser(child.getLeft());
+                }
             }
 
-        } else {
-            System.out.println("NOT BINARY: " + expr);
+            if (!child.getLeft().isMethodCallExpr()) {
+
+
+//            if RIGHT condition is binary ( (x>y), etc) explore further, else print expression
+                if (child.getRight().isNameExpr()) {
+                    System.out.println("right child name " + child.getRight());
+                    rightInstrument = addConditionLogger(child.toString());
+                    child.replace(rightInstrument);
+
+                } else {
+                    System.out.println("recursive call " + child.getRight());
+                    recursiveConditionParser(child.getRight());
+                }
+
+            }
+        //enclosed expression is in brackets, so (x > r) instead of x > r, converts then recalls method
+        } else if (expr instanceof EnclosedExpr) {
+            EnclosedExpr enclosedChild = (EnclosedExpr) expr;
+            BinaryExpr parsed = enclosedChild.getInner().asBinaryExpr();
+            recursiveConditionParser(parsed);
         }
-
 
     }
 
@@ -228,7 +233,7 @@ public class Instrument {
             if( n.getCondition().isBinaryExpr()) {
                 recursiveConditionParser(n.getCondition().asBinaryExpr());
             } else {
-                n.setCondition(new NameExpr(addConditionLogger(n.getCondition().toString())));
+                n.setCondition(addConditionLogger(n.getCondition().toString()));
             }
         }
 
