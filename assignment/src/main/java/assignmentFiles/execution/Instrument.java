@@ -59,6 +59,8 @@ public class Instrument {
         // write instrumented file
         writeInstrumentedFile(cu, className);
 
+        System.out.println(methodDetail);
+
 
     }
 
