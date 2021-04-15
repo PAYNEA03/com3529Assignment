@@ -6,7 +6,6 @@ public class BMICalculator {
         UNDERWEIGHT,
         NORMAL,
         OVERWEIGHT,
-        UNCLASSIFIED,
         OBESE;
     }
 
