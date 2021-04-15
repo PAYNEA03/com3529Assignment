@@ -33,7 +33,7 @@ public class WriteToFile {
         String newName = "Instrumented";
         String filePath = "src/main/java/assignmentFiles/instrumentedFiles/";
         ClassOrInterfaceDeclaration myClass = cu.getClassByName(className.get(0)).get();
-        Instrument.createMethod(myClass, methodDetail);
+        Instrument.createVariableAssignMethod(myClass, methodDetail);
 
         myClass.setName(newName);
         cu.setPackageDeclaration("assignmentFiles.instrumentedFiles");

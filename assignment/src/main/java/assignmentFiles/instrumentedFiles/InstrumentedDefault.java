@@ -9,4 +9,6 @@ public class InstrumentedDefault {
     public static Object assignVariables(HashMap<String, List> paramList, Set<Integer> coveredBranches) {
         return "string";
     }
+    public static void callInstrumentedFile() {
+    }
 }

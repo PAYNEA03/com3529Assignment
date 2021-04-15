@@ -76,7 +76,7 @@ public class Instrument {
 
     }
 
-    public static void createMethod(ClassOrInterfaceDeclaration type, HashMap<String, List> methodDetail) {
+    public static void createVariableAssignMethod(ClassOrInterfaceDeclaration type, HashMap<String, List> methodDetail) {
         MethodDeclaration method = type.addMethod("assignVariables");
         method.setModifiers(Modifier.Keyword.PUBLIC, Modifier.Keyword.STATIC)
                 .setType("Object")
@@ -305,7 +305,7 @@ public class Instrument {
                 n.replace(n.getThenStmt().asExpressionStmt(),k);
             }
 
-            if (!n.hasElseBlock()) {
+            if (!n.hasElseBranch()) {
                 n.setElseStmt(new BlockStmt());
             }
         }

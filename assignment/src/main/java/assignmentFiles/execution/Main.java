@@ -1,5 +1,6 @@
 package assignmentFiles.execution;
 
+import assignmentFiles.instrumentedFiles.Instrumented;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 
@@ -26,19 +27,7 @@ public class Main {
 
 //        @todo 4.2: generate test requirements (branch coverage/MCDC)
 
-//        wait before calling to ensure time for file to write
-        System.out.println("Writing File");
-        for (int i = 3; i > 0; i--) {
-            System.out.println(i + " second wait before calling TestDataGenerator to ensure instrumentation is completed");
-            Thread.sleep(1000);
-        }
-
-//        System.out.print("Choose test type (Choices: randomBranchGeneration): ");
-//        System.out.println("->");
-//        String choice = sc.nextLine();
-
-//        if (choice.equals("randomBranchGeneration"))
-            TestDataGenerator.randomBranchGeneration(classMethods);
+        TestDataGenerator.randomBranchGeneration(classMethods);
 
 //        @todo 4.4 generate test data.
 
