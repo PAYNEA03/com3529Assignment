@@ -62,7 +62,7 @@ public class TestDataGenerator {
                 assignValue = (int) h.get("value");
             }
         }
-        System.out.println("Var: " + name + " value: " + assignValue);
+        System.out.println("Var: " + name + ", value: " + assignValue);
         return assignValue;
     }
 
