@@ -14,19 +14,22 @@ import com.github.javaparser.ast.stmt.BlockStmt;
 import com.github.javaparser.ast.stmt.IfStmt;
 import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.ast.stmt.WhileStmt;
+import com.github.javaparser.ast.type.ClassOrInterfaceType;
+import com.github.javaparser.ast.type.Type;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Optional;
 
 
 public class Instrument {
 
     public static int branchCount = 0;
 
-    public static void parse(CompilationUnit cu) {
+    public void parse(CompilationUnit cu) {
 
         // get class name
         List<String> className = new ArrayList<>();
@@ -55,6 +58,16 @@ public class Instrument {
 
     }
 
+    private HashMap<String, HashMap<String,Type>> methodList;
+
+    private void setMethodList(HashMap<String, HashMap<String,Type>> methods){
+        methodList = methods;
+    }
+
+    public HashMap<String, HashMap<String,Type>> getMethodList(){
+        return methodList;
+    }
+
     private static void createMethod(ClassOrInterfaceDeclaration type) {
         MethodDeclaration method = type.addMethod("testingGetterAndSetter");
         method.setModifiers(Modifier.Keyword.PUBLIC, Modifier.Keyword.STATIC)
@@ -71,6 +84,7 @@ public class Instrument {
         String newName = "Instrumented"+className.get(0);
         String filePath = "src/main/java/assignmentFiles/instrumentedFiles/";
         ClassOrInterfaceDeclaration myClass = cu.getClassByName(className.get(0)).get();
+        CompilationUnit as = new CompilationUnit();
         createMethod(myClass);
 
         myClass.setName(newName);
@@ -99,11 +113,13 @@ public class Instrument {
         public void visit(MethodDeclaration md, List<String> collector) {
             super.visit(md, collector);
             collector.add(md.getNameAsString());
+
+
         }
     }
 
 
-    private static class MethodParser extends VoidVisitorAdapter<String[]> {
+    public class MethodParser extends VoidVisitorAdapter<String[]> {
         @Override
         public void visit(MethodDeclaration md, String[] param) {
             super.visit(md, param);
@@ -121,20 +137,34 @@ public class Instrument {
             md.accept(methodCall,methodNames);
 
 
-            HashMap<String, List> methodList = new HashMap<>();
-            List<HashMap> parameterList = new ArrayList<>();
+            //string name of method, List is parameter list
+            HashMap<String, HashMap<String,Type>> methodList = new HashMap<>();
+            HashMap<String, Type> parameterList = new HashMap<>();
             List<Parameter> list = md.getParameters();
             for(Parameter p:list){
-                HashMap<String, Object> methodDetails = new HashMap<>();
-                methodDetails.put("paramName", p.getName());
-                methodDetails.put("paramType", p.getType());
-                parameterList.add(methodDetails);
+                parameterList.put(p.getName().asString(),p.getType().asTypeParameter().);
             }
 
+            //also add in return type of the whole method but instead of the parameter type its "__RETURN_TYPE__" as the key
+/*            Type type = md.getType();
+
+            if(type instanceof ClassOrInterfaceType) {
+                ClassOrInterfaceType classOrInterfaceType = type.asClassOrInterfaceType();
+                Optional<NodeList<Type>> typeArguments = classOrInterfaceType.getTypeArguments();
+
+                //list of arguments might have different length
+                typeArguments.ifPresent(types -> parameterList.put("__RETURN_TYPE__",types.get(0)));
+            }*/
+
+
+
             methodList.put(md.getNameAsString(), parameterList);
-            System.out.println(methodList);
+
+            setMethodList(methodList);
         }
     }
+
+
 
     private static class MethodCallVisitor extends VoidVisitorAdapter<List<String>> {
         @Override
