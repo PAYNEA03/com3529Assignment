@@ -4,6 +4,7 @@ import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 
 import java.io.File;
+import java.util.Scanner;
 
 
 public class Main {
@@ -19,6 +20,7 @@ public class Main {
     public static void main(String[] args) throws Exception {
 
         CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[0]));
+        Scanner sc = new Scanner(System.in);
 
         Instrument classMethods = Instrument.parseClass(cu);
 
@@ -26,11 +28,17 @@ public class Main {
 
 //        wait before calling to ensure time for file to write
         System.out.println("Writing File");
-        for (int i = 3; i > 0 ; i--) {
+        for (int i = 3; i > 0; i--) {
             System.out.println(i + " second wait before calling TestDataGenerator to ensure instrumentation is completed");
             Thread.sleep(1000);
         }
-        TestDataGenerator.randomBranchGeneration(classMethods);
+
+//        System.out.print("Choose test type (Choices: randomBranchGeneration): ");
+//        System.out.println("->");
+//        String choice = sc.nextLine();
+
+//        if (choice.equals("randomBranchGeneration"))
+            TestDataGenerator.randomBranchGeneration(classMethods);
 
 //        @todo 4.4 generate test data.
 

@@ -304,6 +304,10 @@ public class Instrument {
                 k.addStatement(new NameExpr(t));
                 n.replace(n.getThenStmt().asExpressionStmt(),k);
             }
+
+            if (!n.hasElseBlock()) {
+                n.setElseStmt(new BlockStmt());
+            }
         }
     }
 

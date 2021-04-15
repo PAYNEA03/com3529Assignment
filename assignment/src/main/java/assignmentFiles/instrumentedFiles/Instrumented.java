@@ -21,36 +21,46 @@ public class Instrumented {
             int temp = side1;
             side1 = side2;
             side2 = temp;
+        } else {
+            TestDataGenerator.coveredBranch(2, coveredBranches);
         }
         if (TestDataGenerator.logCondition(3, side1 > side3)) {
-            TestDataGenerator.coveredBranch(2, coveredBranches);
+            TestDataGenerator.coveredBranch(3, coveredBranches);
             int temp = side1;
             side1 = side3;
             side3 = temp;
+        } else {
+            TestDataGenerator.coveredBranch(4, coveredBranches);
         }
         if (TestDataGenerator.logCondition(5, side2 > side3)) {
-            TestDataGenerator.coveredBranch(3, coveredBranches);
+            TestDataGenerator.coveredBranch(5, coveredBranches);
             int temp = side2;
             side2 = side3;
             side3 = temp;
+        } else {
+            TestDataGenerator.coveredBranch(6, coveredBranches);
         }
         if (TestDataGenerator.logCondition(13, side1 + side2 <= side3)) {
-            TestDataGenerator.coveredBranch(8, coveredBranches);
+            TestDataGenerator.coveredBranch(13, coveredBranches);
             type = Type.INVALID;
         } else {
-            TestDataGenerator.coveredBranch(9, coveredBranches);
+            TestDataGenerator.coveredBranch(14, coveredBranches);
             type = Type.SCALENE;
             if (TestDataGenerator.logCondition(11, side1 == side2)) {
-                TestDataGenerator.coveredBranch(6, coveredBranches);
+                TestDataGenerator.coveredBranch(11, coveredBranches);
                 if (TestDataGenerator.logCondition(9, side2 == side3)) {
-                    TestDataGenerator.coveredBranch(5, coveredBranches);
+                    TestDataGenerator.coveredBranch(9, coveredBranches);
                     type = Type.EQUILATERAL;
+                } else {
+                    TestDataGenerator.coveredBranch(10, coveredBranches);
                 }
             } else {
-                TestDataGenerator.coveredBranch(7, coveredBranches);
+                TestDataGenerator.coveredBranch(12, coveredBranches);
                 if (TestDataGenerator.logCondition(7, side2 == side3)) {
-                    TestDataGenerator.coveredBranch(4, coveredBranches);
+                    TestDataGenerator.coveredBranch(7, coveredBranches);
                     type = Type.ISOSCELES;
+                } else {
+                    TestDataGenerator.coveredBranch(8, coveredBranches);
                 }
             }
         }
