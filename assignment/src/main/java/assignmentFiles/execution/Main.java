@@ -2,15 +2,9 @@ package assignmentFiles.execution;
 
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.visitor.VoidVisitor;
-import org.junit.Test;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
+
 
 public class Main {
 
@@ -24,13 +18,19 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[2]));
+        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[0]));
 
         Instrument classMethods = Instrument.parseClass(cu);
 
 //        @todo 4.2: generate test requirements (branch coverage/MCDC)
 
-//        TestDataGenerator.randomBranchGeneration(classMethods);
+//        wait before calling to ensure time for file to write
+        System.out.println("Writing File");
+        for (int i = 3; i > 0 ; i--) {
+            System.out.println(i + " second wait before calling TestDataGenerator to ensure instrumentation is completed");
+            Thread.sleep(1000);
+        }
+        TestDataGenerator.randomBranchGeneration(classMethods);
 
 //        @todo 4.4 generate test data.
 

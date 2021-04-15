@@ -21,10 +21,12 @@ public class Instrument {
     private static HashMap<Integer, Expression> ifStmtLogs = new HashMap<>();
     private static List<String> classNames = new ArrayList<>();
 
-    String path;
-    String className;
-    HashMap<String, List> methodDetails;
-    HashMap<Integer, Expression> ifStmts;
+    public int branchTotal;
+    public int conditionTotal;
+    public String path;
+    public String className;
+    public HashMap<String, List> methodDetails;
+    public HashMap<Integer, Expression> ifStmts;
 
     public static BinaryExpr.Operator[] operators = {
             BinaryExpr.Operator.PLUS,
@@ -38,6 +40,8 @@ public class Instrument {
         this.path = path;
         this.methodDetails = methodDetail;
         this.ifStmts = ifStmtLogs;
+        this.branchTotal = branchCount;
+        this.conditionTotal = conditionCount;
     }
 
 
@@ -64,7 +68,7 @@ public class Instrument {
         whileStmtParser.visit(cu,null);
 
         // write instrumented file
-        String writtenFilePath = WriteToFile.writeInstrumentedFile(cu, classNames);
+        String writtenFilePath = WriteToFile.writeInstrumentedFile(cu, classNames, methodDetail);
 
         Instrument file = new Instrument(writtenFilePath, methodDetail);
 
@@ -72,7 +76,7 @@ public class Instrument {
 
     }
 
-    public static void createMethod(ClassOrInterfaceDeclaration type) {
+    public static void createMethod(ClassOrInterfaceDeclaration type, HashMap<String, List> methodDetail) {
         MethodDeclaration method = type.addMethod("assignVariables");
         method.setModifiers(Modifier.Keyword.PUBLIC, Modifier.Keyword.STATIC)
                 .setType("Object")
@@ -82,33 +86,42 @@ public class Instrument {
                         .addStatement(new NameExpr("Object result = \"empty\""))
                         .addStatement(new NameExpr("for (Map.Entry<String, List> methodEntry : paramList.entrySet()) {"))
                         .addStatement(new NameExpr("String methodName = methodEntry.getKey()"))
-                        .addStatement(new NameExpr("List methodParams = methodEntry.getValue()"))
+                        .addStatement(new NameExpr("List methodParams = methodEntry.getValue()")));
 
-                        
+        for (Map.Entry<String, List> entry : methodDetail.entrySet()) {
+            String key = entry.getKey();
+            List value = entry.getValue();
+            String paramCall = "";
 
-                        .addStatement(new NameExpr("if (methodName.equals(\"daysInMonth\")) {"))
-                        .addStatement(new NameExpr("int month = TestDataGenerator.assignValues(\"month\", methodParams)"))
-                        .addStatement(new NameExpr("int year = TestDataGenerator.assignValues(\"year\", methodParams)"))
-                        .addStatement(new NameExpr("result = daysInMonth(month,year,coveredBranches)"))
+            method.getBody().get()
+                    .addStatement(new NameExpr("if (methodName.equals(\"" + key + "\")) {"))
+                    .addStatement(new NameExpr("System.out.println(\"********Parsing Method: " + key +" ****\");"));
 
-                        .addStatement(new NameExpr("} else if (methodName.equals(\"isLeapYear\")) {"))
-                        .addStatement(new NameExpr("int year = TestDataGenerator.assignValues(\"year\", methodParams)"))
-                        .addStatement(new NameExpr("result = isLeapYear(year,coveredBranches)"))
+            for (Object params : value) {
+                HashMap detail = (HashMap) params;
+                String varName = detail.get("paramName").toString();
+                if (paramCall.isEmpty()) {
+                    paramCall = varName;
+                } else {
+                    paramCall = paramCall + ", " + varName;
+                }
+                method.getBody().get().addStatement(new NameExpr("int "+ varName+" = TestDataGenerator.assignValues(\"" + varName + "\", methodParams)"));
+            }
 
-                        .addStatement(new NameExpr("} else if (methodName.equals(\"daysBetweenTwoDates\")) {"))
-                        .addStatement(new NameExpr("int year1 = TestDataGenerator.assignValues(\"year1\", methodParams)"))
-                        .addStatement(new NameExpr("int month1 = TestDataGenerator.assignValues(\"month1\", methodParams)"))
-                        .addStatement(new NameExpr("int day1 = TestDataGenerator.assignValues(\"day1\", methodParams)"))
-                        .addStatement(new NameExpr("int year2 = TestDataGenerator.assignValues(\"year2\", methodParams)"))
-                        .addStatement(new NameExpr("int month2 = TestDataGenerator.assignValues(\"month2\", methodParams)"))
-                        .addStatement(new NameExpr("int day2 = TestDataGenerator.assignValues(\"day2\", methodParams)"))
-                        .addStatement(new NameExpr("result = daysBetweenTwoDates(year1, month1, day1, year2, month2, day2, coveredBranches)"))
+            method.getBody().get()
+                    .addStatement(new NameExpr("try {"))
+                    .addStatement(new NameExpr(key + "(" + paramCall +", coveredBranches)"))
+                    .addStatement(new NameExpr("} catch (Exception e) {"))
+                    .addStatement(new NameExpr("System.out.println(e)"))
+                    .addStatement(new NameExpr("System.out.println(\"Something went wrong passing values to function\")"))
+                    .addStatement(new NameExpr("}"))
+                    .addStatement(new NameExpr("}"));
+        }
 
-                        .addStatement(new NameExpr("}"))
-                        .addStatement(new NameExpr("}"))
+        method.getBody().get()
+                .addStatement(new NameExpr("}"))
+                .addStatement(new NameExpr("return result"));
 
-                        .addStatement(new NameExpr("return result"))
-                );
 
     }
 

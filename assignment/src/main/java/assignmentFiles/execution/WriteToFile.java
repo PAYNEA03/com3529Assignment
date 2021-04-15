@@ -6,6 +6,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
 
 
@@ -28,11 +29,11 @@ public class WriteToFile {
 
     }
 
-    public static String writeInstrumentedFile(CompilationUnit cu, List<String> className) {
+    public static String writeInstrumentedFile(CompilationUnit cu, List<String> className, HashMap<String, List> methodDetail) {
         String newName = "Instrumented";
         String filePath = "src/main/java/assignmentFiles/instrumentedFiles/";
         ClassOrInterfaceDeclaration myClass = cu.getClassByName(className.get(0)).get();
-        Instrument.createMethod(myClass);
+        Instrument.createMethod(myClass, methodDetail);
 
         myClass.setName(newName);
         cu.setPackageDeclaration("assignmentFiles.instrumentedFiles");
