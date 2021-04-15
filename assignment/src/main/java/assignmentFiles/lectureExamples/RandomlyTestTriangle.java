@@ -12,8 +12,8 @@ public class RandomlyTestTriangle {
 
     // static final int MIN_INT = Integer.MIN_VALUE;
     // static final int MAX_INT = Integer.MAX_VALUE;
-    static final int MIN_INT = -15;
-    static final int MAX_INT = 15;
+    static final int MIN_INT = -10;
+    static final int MAX_INT = 10;
 
     public static void main(String[] args) {
         randomlyTestClassify();
