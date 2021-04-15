@@ -100,12 +100,13 @@ public class Instrument {
             for (Object params : value) {
                 HashMap detail = (HashMap) params;
                 String varName = detail.get("paramName").toString();
+                Object varType = detail.get("paramType").toString();
                 if (paramCall.isEmpty()) {
                     paramCall = varName;
                 } else {
                     paramCall = paramCall + ", " + varName;
                 }
-                method.getBody().get().addStatement(new NameExpr("int "+ varName+" = TestDataGenerator.assignValues(\"" + varName + "\", methodParams)"));
+                method.getBody().get().addStatement(new NameExpr(varType + " "+ varName+" = TestDataGenerator.assignValues(\"" + varName + "\", methodParams)"));
             }
 
             method.getBody().get()

@@ -11,60 +11,26 @@ public class Instrumented {
 
     public enum Type {
 
-        INVALID, SCALENE, EQUILATERAL, ISOSCELES
+        UNDERWEIGHT, NORMAL, OVERWEIGHT, UNCLASSIFIED, OBESE
     }
 
-    public static Type classify(int side1, int side2, int side3, Set<Integer> coveredBranches) {
-        Type type;
-        if (TestDataGenerator.logCondition(1, side1 > side2)) {
+    public static Type calculate(double weightInPounds, int heightFeet, int heightInches, Set<Integer> coveredBranches) {
+        double weightInKilos = weightInPounds * 0.453592;
+        double heightInMeters = ((heightFeet * 12) + heightInches) * .0254;
+        double bmi = weightInKilos / Math.pow(heightInMeters, 2.0);
+        if (TestDataGenerator.logCondition(5, bmi < 18.5)) {
+            TestDataGenerator.coveredBranch(4, coveredBranches);
+            return Type.UNDERWEIGHT;
+        } else if (TestDataGenerator.logCondition(3, bmi >= 17.5) && TestDataGenerator.logCondition(4, bmi < 25)) {
+            TestDataGenerator.coveredBranch(3, coveredBranches);
+            return Type.NORMAL;
+        } else if (TestDataGenerator.logCondition(1, bmi >= 25) && TestDataGenerator.logCondition(2, bmi < 30)) {
             TestDataGenerator.coveredBranch(1, coveredBranches);
-            int temp = side1;
-            side1 = side2;
-            side2 = temp;
+            return Type.OVERWEIGHT;
         } else {
             TestDataGenerator.coveredBranch(2, coveredBranches);
+            return Type.OBESE;
         }
-        if (TestDataGenerator.logCondition(3, side1 > side3)) {
-            TestDataGenerator.coveredBranch(3, coveredBranches);
-            int temp = side1;
-            side1 = side3;
-            side3 = temp;
-        } else {
-            TestDataGenerator.coveredBranch(4, coveredBranches);
-        }
-        if (TestDataGenerator.logCondition(5, side2 > side3)) {
-            TestDataGenerator.coveredBranch(5, coveredBranches);
-            int temp = side2;
-            side2 = side3;
-            side3 = temp;
-        } else {
-            TestDataGenerator.coveredBranch(6, coveredBranches);
-        }
-        if (TestDataGenerator.logCondition(13, side1 + side2 <= side3)) {
-            TestDataGenerator.coveredBranch(13, coveredBranches);
-            type = Type.INVALID;
-        } else {
-            TestDataGenerator.coveredBranch(14, coveredBranches);
-            type = Type.SCALENE;
-            if (TestDataGenerator.logCondition(11, side1 == side2)) {
-                TestDataGenerator.coveredBranch(11, coveredBranches);
-                if (TestDataGenerator.logCondition(9, side2 == side3)) {
-                    TestDataGenerator.coveredBranch(9, coveredBranches);
-                    type = Type.EQUILATERAL;
-                } else {
-                    TestDataGenerator.coveredBranch(10, coveredBranches);
-                }
-            } else {
-                TestDataGenerator.coveredBranch(12, coveredBranches);
-                if (TestDataGenerator.logCondition(7, side2 == side3)) {
-                    TestDataGenerator.coveredBranch(7, coveredBranches);
-                    type = Type.ISOSCELES;
-                } else {
-                    TestDataGenerator.coveredBranch(8, coveredBranches);
-                }
-            }
-        }
-        return type;
     }
 
     public static Object assignVariables(HashMap<String, List> paramList, Set<Integer> coveredBranches) {
@@ -72,13 +38,13 @@ public class Instrumented {
         for (Map.Entry<String, List> methodEntry : paramList.entrySet()) {;
         String methodName = methodEntry.getKey();
         List methodParams = methodEntry.getValue();
-        if (methodName.equals("classify")) {;
-        System.out.println("********Parsing Method: classify ****");;
-        int side1 = TestDataGenerator.assignValues("side1", methodParams);
-        int side2 = TestDataGenerator.assignValues("side2", methodParams);
-        int side3 = TestDataGenerator.assignValues("side3", methodParams);
+        if (methodName.equals("calculate")) {;
+        System.out.println("********Parsing Method: calculate ****");;
+        double weightInPounds = TestDataGenerator.assignValues("weightInPounds", methodParams);
+        int heightFeet = TestDataGenerator.assignValues("heightFeet", methodParams);
+        int heightInches = TestDataGenerator.assignValues("heightInches", methodParams);
         try {;
-        classify(side1, side2, side3, coveredBranches);
+        calculate(weightInPounds, heightFeet, heightInches, coveredBranches);
         } catch (Exception e) {;
         System.out.println(e);
         System.out.println("Something went wrong passing values to function");

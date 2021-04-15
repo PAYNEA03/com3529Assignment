@@ -61,29 +61,29 @@ public class TestDataGenerator {
 
 
         ////        example code to parse hashmaps
-//        for (Map.Entry<String, List> entry : classMethods.methodDetails.entrySet()) {
-//            String key = entry.getKey();
-//            List value = entry.getValue();
-//            System.out.println("Key: "+ key);
-//            System.out.println("Vals: " + value);
-//        }
-//
-//        System.out.println("");
-//
-//        for (Map.Entry<Integer, Expression> entry : classMethods.ifStmts.entrySet()) {
-//            Integer key = entry.getKey();
-//            Expression value = entry.getValue();
-//            System.out.println("logCondition Key: "+ key);
-//            System.out.println("Vals: " + value);
-//
-////            if not a method call example isLeapYear(year, coveredBranches), breakdown condition
-//            if (!value.isMethodCallExpr()) {
-//                System.out.println("Left: " + value.asBinaryExpr().getLeft());
-//                System.out.println("Right: " + value.asBinaryExpr().getRight());
-//                System.out.println("Operator: " + value.asBinaryExpr().getOperator());
-//                System.out.println("");
-//            }
-//        }
+        for (Map.Entry<String, List> entry : classMethods.methodDetails.entrySet()) {
+            String key = entry.getKey();
+            List value = entry.getValue();
+            System.out.println("Key: "+ key);
+            System.out.println("Vals: " + value);
+        }
+
+        System.out.println("");
+
+        for (Map.Entry<Integer, Expression> entry : classMethods.ifStmts.entrySet()) {
+            Integer key = entry.getKey();
+            Expression value = entry.getValue();
+            System.out.println("logCondition Key: "+ key);
+            System.out.println("Vals: " + value);
+
+//            if not a method call example isLeapYear(year, coveredBranches), breakdown condition
+            if (!value.isMethodCallExpr()) {
+                System.out.println("Left: " + value.asBinaryExpr().getLeft());
+                System.out.println("Right: " + value.asBinaryExpr().getRight());
+                System.out.println("Operator: " + value.asBinaryExpr().getOperator());
+                System.out.println("");
+            }
+        }
 
     }
 
