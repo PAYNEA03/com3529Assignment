@@ -55,8 +55,13 @@ public class Instrument {
 
     }
 
+<<<<<<< HEAD
     private static void createMethod(ClassOrInterfaceDeclaration type) {
         MethodDeclaration method = type.addMethod("testingGetterAndSetter");
+=======
+    public static void createMethod(ClassOrInterfaceDeclaration type, HashMap<String, List> methodDetail) {
+        MethodDeclaration method = type.addMethod("assignVariables");
+>>>>>>> parent of ad6548c... minor bug fixes
         method.setModifiers(Modifier.Keyword.PUBLIC, Modifier.Keyword.STATIC)
                 .setType("void")
                 .addParameter("String[]","paramList")
@@ -194,6 +199,13 @@ public class Instrument {
                 k.addStatement(new NameExpr(t));
                 n.replace(n.getThenStmt().asExpressionStmt(),k);
             }
+<<<<<<< HEAD
+=======
+
+            if (!n.hasElseBlock()) {
+                n.setElseStmt(new BlockStmt());
+            }
+>>>>>>> parent of ad6548c... minor bug fixes
         }
     }
 

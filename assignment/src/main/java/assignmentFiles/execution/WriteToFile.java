@@ -22,4 +22,31 @@ public class WriteToFile {
         return path;
 
     }
+<<<<<<< HEAD
+=======
+
+    public static String writeInstrumentedFile(CompilationUnit cu, List<String> className, HashMap<String, List> methodDetail) {
+        String newName = "Instrumented";
+        String filePath = "src/main/java/assignmentFiles/instrumentedFiles/";
+        ClassOrInterfaceDeclaration myClass = cu.getClassByName(className.get(0)).get();
+        Instrument.createMethod(myClass, methodDetail);
+
+        myClass.setName(newName);
+        cu.setPackageDeclaration("assignmentFiles.instrumentedFiles");
+
+        cu.addImport(new ImportDeclaration("java.util.TreeSet", false, false));
+        cu.addImport(new ImportDeclaration("java.util.Set", false, false));
+        cu.addImport(new ImportDeclaration("java.util.HashMap", false, false));
+        cu.addImport(new ImportDeclaration("java.util.List", false, false));
+        cu.addImport(new ImportDeclaration("java.util.Map", false, false));
+        cu.addImport(new ImportDeclaration("assignmentFiles.execution", false, true));
+
+
+        writeClass(cu.toString(),newName,filePath);
+        String createFile = filePath + newName + ".java";
+
+        return createFile;
+
+    }
+>>>>>>> parent of ad6548c... minor bug fixes
 }
