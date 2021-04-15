@@ -15,6 +15,10 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import java.io.File;
+import java.util.Scanner;
+
+
 public class Main {
     //
 
@@ -94,38 +98,33 @@ public class Main {
 //            ifStmt.forEach(n ->
 //                    System.out.println(n));
 
-//            for (HashMap h:ifStmt) {
-//                IfStmt i = (IfStmt) h.get("object");
-//
-//                System.out.println(i);
-//            }
+        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[0]));
+        Scanner sc = new Scanner(System.in);
 
-            /**
-             * Javaparser visitor for method declarations, returns a hashmap with method names and their params
-             * */
+        Instrument classMethods = Instrument.parseClass(cu);
 
-            List<HashMap> methodNames = new ArrayList<>();
-            VoidVisitor<List<HashMap>> methodCollector = new Parser.MethodCollector();
+//        @todo 4.2: generate test requirements (branch coverage/MCDC)
 
-            methodCollector.visit(cu, methodNames);
-            methodNames.forEach(n ->
-                    System.out.println(n));
-
-            System.out.println(cu);
+//        wait before calling to ensure time for file to write
+        System.out.println("Writing File");
+        for (int i = 3; i > 0; i--) {
+            System.out.println(i + " second wait before calling TestDataGenerator to ensure instrumentation is completed");
+            Thread.sleep(1000);
         }
+
+//        System.out.print("Choose test type (Choices: randomBranchGeneration): ");
+//        System.out.println("->");
+//        String choice = sc.nextLine();
+
+//        if (choice.equals("randomBranchGeneration"))
+            TestDataGenerator.randomBranchGeneration(classMethods);
+
+//        @todo 4.4 generate test data.
+
+
+
+
+
     }
-
-    private static void writeFile(String file, String fileName) throws IOException {
-//        String[] file = WriteToFile.fileInstrument(filePath);
-
-//        String instrumentedFile = WriteToFile.writeInstrumentedFile(file, fileName);
-
-        // checks to see if created file exists (https://alvinalexander.com/java/java-file-exists-directory-exists/)
-//        File tmpDir = new File(instrumentedFile);
-//        boolean exists = tmpDir.exists();
-//
-//        System.out.println("has file been created? " + exists + " @ " + instrumentedFile);
-    }
-
 
 }
