@@ -79,13 +79,15 @@ public class Instrument {
     }
 
     public static void createVariableAssignMethod(ClassOrInterfaceDeclaration type, HashMap<String, List> methodDetail) {
+//        set method name
         MethodDeclaration method = type.addMethod("assignVariables");
+//        set method dynamics
         method.setModifiers(Modifier.Keyword.PUBLIC, Modifier.Keyword.STATIC)
                 .setType("Object")
                 .addParameter("HashMap<String, List>", "paramList")
                 .addParameter("Set<Integer>","coveredBranches")
                 .addParameter("Set<Integer>","coveredConditions")
-//                initialize body and set up for loop to iterate through the hashmap method names
+//       initialize body and set up for loop to iterate through the hashmap method names
                 .setBody(new BlockStmt()
                         .addStatement(new NameExpr("Object result = \"empty\""))
                         .addStatement(new NameExpr("for (Map.Entry<String, List> methodEntry : paramList.entrySet()) {"))

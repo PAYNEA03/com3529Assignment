@@ -32,10 +32,14 @@ public class WriteToFile {
     public static String writeInstrumentedFile(CompilationUnit cu, List<String> className, HashMap<String, List> methodDetail) {
         String newName = "Instrumented";
         String filePath = "src/main/java/assignmentFiles/instrumentedFiles/";
+//        set class name
         ClassOrInterfaceDeclaration myClass = cu.getClassByName(className.get(0)).get();
+        myClass.setName(newName);
+
+//        choose additional methods to add
         Instrument.createVariableAssignMethod(myClass, methodDetail);
 
-        myClass.setName(newName);
+//    set package details and imports
         cu.setPackageDeclaration("assignmentFiles.instrumentedFiles");
 
         cu.addImport(new ImportDeclaration("java.util.TreeSet", false, false));
@@ -46,6 +50,7 @@ public class WriteToFile {
         cu.addImport(new ImportDeclaration("assignmentFiles.execution", false, true));
 
 
+//        change to string so can be written to a file
         writeClass(cu.toString(),newName,filePath);
         String createFile = filePath + newName + ".java";
 
