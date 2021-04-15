@@ -9,62 +9,128 @@ import assignmentFiles.execution.*;
 
 public class Instrumented {
 
-    public enum Type {
-
-        INVALID, SCALENE, EQUILATERAL, ISOSCELES
-    }
-
-    public static Type classify(int side1, int side2, int side3, Set<Integer> coveredBranches, Set<Integer> coveredConditions) {
-        Type type;
-        if (TestDataGenerator.logCondition(1, side1 > side2, coveredConditions)) {
+    public static int daysBetweenTwoDates(int year1, int month1, int day1, int year2, int month2, int day2, Set<Integer> coveredBranches, Set<Integer> coveredConditions) {
+        int days = 0;
+        // sanitize month inputs
+        if (TestDataGenerator.logCondition(1, month1 < 1, coveredConditions)) {
             TestDataGenerator.coveredBranch(1, coveredBranches);
-            int temp = side1;
-            side1 = side2;
-            side2 = temp;
+            month1 = 1;
         } else {
             TestDataGenerator.coveredBranch(2, coveredBranches);
         }
-        if (TestDataGenerator.logCondition(3, side1 > side3, coveredConditions)) {
+        if (TestDataGenerator.logCondition(2, month2 < 1, coveredConditions)) {
             TestDataGenerator.coveredBranch(3, coveredBranches);
-            int temp = side1;
-            side1 = side3;
-            side3 = temp;
+            month2 = 1;
         } else {
             TestDataGenerator.coveredBranch(4, coveredBranches);
         }
-        if (TestDataGenerator.logCondition(5, side2 > side3, coveredConditions)) {
+        if (TestDataGenerator.logCondition(3, month1 > 12, coveredConditions)) {
             TestDataGenerator.coveredBranch(5, coveredBranches);
-            int temp = side2;
-            side2 = side3;
-            side3 = temp;
+            month1 = 12;
         } else {
             TestDataGenerator.coveredBranch(6, coveredBranches);
         }
-        if (TestDataGenerator.logCondition(13, side1 + side2 <= side3, coveredConditions)) {
+        if (TestDataGenerator.logCondition(4, month2 > 12, coveredConditions)) {
+            TestDataGenerator.coveredBranch(7, coveredBranches);
+            month2 = 12;
+        } else {
+            TestDataGenerator.coveredBranch(8, coveredBranches);
+        }
+        // sanitize day inputs
+        if (TestDataGenerator.logCondition(5, day1 < 1, coveredConditions)) {
+            TestDataGenerator.coveredBranch(9, coveredBranches);
+            day1 = 1;
+        } else {
+            TestDataGenerator.coveredBranch(10, coveredBranches);
+        }
+        if (TestDataGenerator.logCondition(6, day2 < 1, coveredConditions)) {
+            TestDataGenerator.coveredBranch(11, coveredBranches);
+            day2 = 1;
+        } else {
+            TestDataGenerator.coveredBranch(12, coveredBranches);
+        }
+        if (TestDataGenerator.logCondition(7, day1 > daysInMonth(month1, year1, coveredBranches, coveredConditions), coveredConditions)) {
             TestDataGenerator.coveredBranch(13, coveredBranches);
-            type = Type.INVALID;
+            day1 = daysInMonth(month1, year1, coveredBranches, coveredConditions);
         } else {
             TestDataGenerator.coveredBranch(14, coveredBranches);
-            type = Type.SCALENE;
-            if (TestDataGenerator.logCondition(11, side1 == side2, coveredConditions)) {
-                TestDataGenerator.coveredBranch(11, coveredBranches);
-                if (TestDataGenerator.logCondition(9, side2 == side3, coveredConditions)) {
-                    TestDataGenerator.coveredBranch(9, coveredBranches);
-                    type = Type.EQUILATERAL;
-                } else {
-                    TestDataGenerator.coveredBranch(10, coveredBranches);
+        }
+        if (TestDataGenerator.logCondition(8, day2 > daysInMonth(month2, year2, coveredBranches, coveredConditions), coveredConditions)) {
+            TestDataGenerator.coveredBranch(15, coveredBranches);
+            day2 = daysInMonth(month2, year2, coveredBranches, coveredConditions);
+        } else {
+            TestDataGenerator.coveredBranch(16, coveredBranches);
+        }
+        // swap dates if year2, month2, day2 is before year1, month1, day1
+        if ((TestDataGenerator.logCondition(9, year2 < year1, coveredConditions)) || (TestDataGenerator.logCondition(11, year2 == year1, coveredConditions) && TestDataGenerator.logCondition(13, month2 < month1, coveredConditions)) || (TestDataGenerator.logCondition(15, year2 == year1, coveredConditions) && TestDataGenerator.logCondition(17, month2 == month1, coveredConditions) && TestDataGenerator.logCondition(19, day2 < day1, coveredConditions))) {
+            TestDataGenerator.coveredBranch(17, coveredBranches);
+            int t = month2;
+            month2 = month1;
+            month1 = t;
+            t = day2;
+            day2 = day1;
+            day1 = t;
+            t = year2;
+            year2 = year1;
+            year1 = t;
+        } else {
+            TestDataGenerator.coveredBranch(18, coveredBranches);
+        }
+        // calculate days
+        if (TestDataGenerator.logCondition(24, month1 == month2, coveredConditions) && TestDataGenerator.logCondition(26, year1 == year2, coveredConditions)) {
+            TestDataGenerator.coveredBranch(23, coveredBranches);
+            days = day2 - day1;
+        } else {
+            TestDataGenerator.coveredBranch(24, coveredBranches);
+            days += daysInMonth(month1, year1, coveredBranches, coveredConditions) - day1;
+            days += day2;
+            if (TestDataGenerator.logCondition(22, year1 == year2, coveredConditions)) {
+                TestDataGenerator.coveredBranch(21, coveredBranches);
+                int month = month1 + 1;
+                while (TestDataGenerator.logCondition(33, month < month2, coveredConditions)) {
+                    TestDataGenerator.coveredBranch(28, coveredBranches);
+                    days += daysInMonth(month, year1, coveredBranches, coveredConditions);
+                    month++;
                 }
             } else {
-                TestDataGenerator.coveredBranch(12, coveredBranches);
-                if (TestDataGenerator.logCondition(7, side2 == side3, coveredConditions)) {
-                    TestDataGenerator.coveredBranch(7, coveredBranches);
-                    type = Type.ISOSCELES;
-                } else {
-                    TestDataGenerator.coveredBranch(8, coveredBranches);
+                TestDataGenerator.coveredBranch(22, coveredBranches);
+                int year;
+                int month = month1 + 1;
+                while (TestDataGenerator.logCondition(28, month <= 12, coveredConditions)) {
+                    TestDataGenerator.coveredBranch(25, coveredBranches);
+                    days += daysInMonth(month, year1, coveredBranches, coveredConditions);
+                    month++;
+                }
+                month = 1;
+                while (TestDataGenerator.logCondition(29, month < month2, coveredConditions)) {
+                    TestDataGenerator.coveredBranch(26, coveredBranches);
+                    days += daysInMonth(month, year2, coveredBranches, coveredConditions);
+                    month++;
+                }
+                year = year1 + 1;
+                while (TestDataGenerator.logCondition(31, year < year2, coveredConditions)) {
+                    TestDataGenerator.coveredBranch(27, coveredBranches);
+                    days += 365;
+                    if (TestDataGenerator.logCondition(21, isLeapYear(year, coveredBranches, coveredConditions), coveredConditions)) {
+                        TestDataGenerator.coveredBranch(19, coveredBranches);
+                        days++;
+                    } else {
+                        TestDataGenerator.coveredBranch(20, coveredBranches);
+                    }
+                    year++;
                 }
             }
         }
-        return type;
+        return days;
+    }
+
+    public static boolean isLeapYear(int year, Set<Integer> coveredBranches, Set<Integer> coveredConditions) {
+        return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
+    }
+
+    public static int daysInMonth(int month, int year, Set<Integer> coveredBranches, Set<Integer> coveredConditions) {
+        int[] daysInMonthNonLeapYear = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+        return month == 2 && isLeapYear(year, coveredBranches, coveredConditions) ? 29 : daysInMonthNonLeapYear[month - 1];
     }
 
     public static Object assignVariables(HashMap<String, List> paramList, Set<Integer> coveredBranches, Set<Integer> coveredConditions) {
@@ -72,13 +138,37 @@ public class Instrumented {
         for (Map.Entry<String, List> methodEntry : paramList.entrySet()) {;
         String methodName = methodEntry.getKey();
         List methodParams = methodEntry.getValue();
-        if (methodName.equals("classify")) {;
-        System.out.println("********Parsing Method: classify ****");;
-        int side1 = TestDataGenerator.assignValues("side1", methodParams);
-        int side2 = TestDataGenerator.assignValues("side2", methodParams);
-        int side3 = TestDataGenerator.assignValues("side3", methodParams);
+        if (methodName.equals("daysInMonth")) {;
+        System.out.println("********Parsing Method: daysInMonth ****");;
+        int month = TestDataGenerator.assignValues("month", methodParams);
+        int year = TestDataGenerator.assignValues("year", methodParams);
         try {;
-        classify(side1, side2, side3, coveredBranches, coveredConditions);
+        daysInMonth(month, year, coveredBranches, coveredConditions);
+        } catch (Exception e) {;
+        System.out.println(e);
+        System.out.println("Something went wrong passing values to function");
+        };
+        };
+        if (methodName.equals("isLeapYear")) {;
+        System.out.println("********Parsing Method: isLeapYear ****");;
+        int year = TestDataGenerator.assignValues("year", methodParams);
+        try {;
+        isLeapYear(year, coveredBranches, coveredConditions);
+        } catch (Exception e) {;
+        System.out.println(e);
+        System.out.println("Something went wrong passing values to function");
+        };
+        };
+        if (methodName.equals("daysBetweenTwoDates")) {;
+        System.out.println("********Parsing Method: daysBetweenTwoDates ****");;
+        int year1 = TestDataGenerator.assignValues("year1", methodParams);
+        int month1 = TestDataGenerator.assignValues("month1", methodParams);
+        int day1 = TestDataGenerator.assignValues("day1", methodParams);
+        int year2 = TestDataGenerator.assignValues("year2", methodParams);
+        int month2 = TestDataGenerator.assignValues("month2", methodParams);
+        int day2 = TestDataGenerator.assignValues("day2", methodParams);
+        try {;
+        daysBetweenTwoDates(year1, month1, day1, year2, month2, day2, coveredBranches, coveredConditions);
         } catch (Exception e) {;
         System.out.println(e);
         System.out.println("Something went wrong passing values to function");

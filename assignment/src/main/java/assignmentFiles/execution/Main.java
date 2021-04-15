@@ -20,7 +20,7 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[0]));
+        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[2]));
 
         Instrument classMethods = Instrument.parseClass(cu);
 

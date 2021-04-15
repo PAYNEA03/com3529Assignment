@@ -57,7 +57,9 @@ public class Instrument {
         //instrument methods in class
         HashMap<String, List> methodDetail = new HashMap<>();
         VoidVisitor methodParser = new Instrument.MethodParser();
+
         methodParser.visit(cu, methodDetail);
+
 
         //instrument if statements
         VoidVisitor ifStmtParser = new Instrument.IfStmtParser();
@@ -247,6 +249,7 @@ public class Instrument {
             //add parameter arg to all method calls in class
             VoidVisitor methodCall = new Instrument.MethodCallVisitor();
             md.accept(methodCall,methodNames);
+
         }
     }
 
@@ -254,7 +257,8 @@ public class Instrument {
         @Override
         public void visit(MethodCallExpr n, List<String> methodNames) {
             if (methodNames.contains(n.getNameAsString())) {
-                n.addArgument("coveredBranches, coveredConditions");
+                n.addArgument("coveredBranches");
+                n.addArgument("coveredConditions");
             }
             super.visit(n, methodNames);
         }
