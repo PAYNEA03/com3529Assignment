@@ -11,18 +11,21 @@ import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
+import javassist.expr.Expr;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.List;
-
+import java.util.*;
 
 
 public class Instrument {
 
     public static int branchCount = 0;
     public static int conditionCount = 0;
+
+    static HashMap<Integer, Expression> ifStmtLogs = new HashMap<>();
+
+    String path;
+    HashMap<String, List> methodDetails;
+    HashMap<Integer, Expression> ifStmts;
 
     public static BinaryExpr.Operator[] operators = {
             BinaryExpr.Operator.PLUS,
@@ -32,8 +35,14 @@ public class Instrument {
             BinaryExpr.Operator.REMAINDER
     };
 
+    public Instrument(String path, HashMap<String, List>methodDetail) {
+        this.path = path;
+        this.methodDetails = methodDetail;
+        this.ifStmts = ifStmtLogs;
+    }
 
-    public static void parseClass(CompilationUnit cu) {
+
+    public static Instrument parseClass(CompilationUnit cu) {
 
         // get class name
         List<String> className = new ArrayList<>();
@@ -57,10 +66,11 @@ public class Instrument {
         whileStmtParser.visit(cu,null);
 
         // write instrumented file
-        writeInstrumentedFile(cu, className);
+        String writtenFilePath = writeInstrumentedFile(cu, className);
 
-        System.out.println(methodDetail);
+        Instrument file = new Instrument(writtenFilePath, methodDetail);
 
+        return file;
 
     }
 
@@ -76,7 +86,7 @@ public class Instrument {
 
     }
 
-    private static void writeInstrumentedFile(CompilationUnit cu, List<String> className) {
+    private static String writeInstrumentedFile(CompilationUnit cu, List<String> className) {
         String newName = "Instrumented"+className.get(0);
         String filePath = "src/main/java/assignmentFiles/instrumentedFiles/";
         ClassOrInterfaceDeclaration myClass = cu.getClassByName(className.get(0)).get();
@@ -91,6 +101,9 @@ public class Instrument {
 
 
         WriteToFile.writeClass(cu.toString(),newName,filePath);
+        String createFile = filePath + newName + ".java";
+
+        return createFile;
 
     }
 
@@ -110,7 +123,6 @@ public class Instrument {
             collector.add(md.getNameAsString());
         }
     }
-
 
     private static class MethodParser extends VoidVisitorAdapter<HashMap<String, List>> {
         @Override
@@ -164,8 +176,9 @@ public class Instrument {
         return branch;
     }
 
-    private static NameExpr addConditionLogger(String stmt) {
+    private static NameExpr addConditionLogger(Expression stmt) {
         conditionCount++;
+        ifStmtLogs.put(conditionCount,stmt);
         String condition = "TestDataGenerator.logCondition(" + conditionCount + ", " + stmt + ")";
         NameExpr newCondition = new NameExpr(condition);
 
@@ -188,7 +201,7 @@ public class Instrument {
                 if (child.getLeft().isNameExpr()) {
 //                    checks if operator is boolean return
                     if (!operatorList.contains(child.getOperator())) {
-                        leftInstrument = addConditionLogger(child.toString());
+                        leftInstrument = addConditionLogger(child);
                         child.replace(leftInstrument);
                     }
 
@@ -202,7 +215,7 @@ public class Instrument {
 //            if RIGHT condition is binary ( (x>y), etc) explore further, else print expression
                 if (child.getRight().isNameExpr()) {
                     if (!operatorList.contains(child.getOperator())) {
-                        rightInstrument = addConditionLogger(child.toString());
+                        rightInstrument = addConditionLogger(child);
                         child.replace(rightInstrument);
                     }
 
@@ -230,7 +243,7 @@ public class Instrument {
             if( md.getCondition().isBinaryExpr()) {
                 recursiveConditionParser(md.getCondition().asBinaryExpr());
             } else {
-                md.setCondition(addConditionLogger(md.getCondition().toString()));
+                md.setCondition(addConditionLogger(md.getCondition()));
             }
         }
 
@@ -252,10 +265,11 @@ public class Instrument {
 
         private static void parseIfStmt(IfStmt n) {
             n.getThenStmt().asBlockStmt().addStatement(0, new NameExpr(addBranchLogger()));
+
             if( n.getCondition().isBinaryExpr()) {
                 recursiveConditionParser(n.getCondition().asBinaryExpr());
             } else {
-                n.setCondition(addConditionLogger(n.getCondition().toString()));
+                n.setCondition(addConditionLogger(n.getCondition()));
             }
         }
 

@@ -4,9 +4,7 @@ package assignmentFiles.execution;
 import assignmentFiles.subjectFiles.Triangle;
 import com.github.javaparser.ast.expr.Expression;
 
-import java.util.Random;
-import java.util.Set;
-import java.util.TreeSet;
+import java.util.*;
 
 public class TestDataGenerator {
 
@@ -14,12 +12,38 @@ public class TestDataGenerator {
     static final int MIN_INT = -10;
     static final int MAX_INT = 10;
 
-    public static void randomBranchGeneration() {
+    public static void randomBranchGeneration(Instrument classMethods) {
 
-        Random r = new Random();
-        Set<Integer> coveredBranches = new TreeSet<>();
+        System.out.println(classMethods.path);
 
-        for (int i=0; i < ITERATIONS; i ++) {
+        for (Map.Entry<String, List> entry : classMethods.methodDetails.entrySet()) {
+            String key = entry.getKey();
+            List value = entry.getValue();
+            System.out.println("Key: "+ key);
+            System.out.println("Vals: " + value);
+        }
+
+        System.out.println("");
+
+        for (Map.Entry<Integer, Expression> entry : classMethods.ifStmts.entrySet()) {
+            Integer key = entry.getKey();
+            Expression value = entry.getValue();
+            System.out.println("logCondition Key: "+ key);
+            System.out.println("Vals: " + value);
+
+//            if not a method call example isLeapYear(year, coveredBranches), breakdown condition
+            if (!value.isMethodCallExpr()) {
+                System.out.println("Left: " + value.asBinaryExpr().getLeft());
+                System.out.println("Right: " + value.asBinaryExpr().getRight());
+                System.out.println("Operator: " + value.asBinaryExpr().getOperator());
+                System.out.println("");
+            }
+        }
+
+//        Random r = new Random();
+//        Set<Integer> coveredBranches = new TreeSet<>();
+
+//        for (int i=0; i < ITERATIONS; i ++) {
 
 //            @todo get methods to test
 //              * create variables for that methods parameters
@@ -30,15 +54,15 @@ public class TestDataGenerator {
 //            System.out.println((i+1) + ": [" + side1 + ", " + side2 + ", " + side3 + "]");
 //            Triangle.Type result = instrumentedClassify(side1, side2, side3, coveredBranches);
 //            System.out.println("-> " + result);
-            Object var = 2;
-
-//            InstrumentedCalendar.daysBetweenTwoDates(var,var,var,var,var,var,var);
-        }
-
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        System.out.println("Branch Coverage: " + coveredBranches.size() + "/14");
-        System.out.println("Covered Branch IDs: " + coveredBranches);
-        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+//            Object var = 2;
+//
+////            InstrumentedCalendar.daysBetweenTwoDates(var,var,var,var,var,var,var);
+//        }
+//
+//        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+//        System.out.println("Branch Coverage: " + coveredBranches.size() + "/14");
+//        System.out.println("Covered Branch IDs: " + coveredBranches);
+//        System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
 
     }

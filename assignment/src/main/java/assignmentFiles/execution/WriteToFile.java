@@ -14,7 +14,8 @@ public class WriteToFile {
             FileWriter myWriter = new FileWriter(path);
             myWriter.write(myClass);
             myWriter.close();
-            System.out.println("Successfully wrote to the file.");
+            System.out.println("Successfully wrote " + path);
+            System.out.println("");
         } catch (IOException e) {
             System.out.println("An error occurred.");
             e.printStackTrace();

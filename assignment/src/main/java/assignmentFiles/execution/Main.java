@@ -31,11 +31,11 @@ public class Main {
 //        @todo 4.1.2/4.3: using obtained methods and predicates, create an instrumented file with
 //          logging statements
 
-        Instrument.parseClass(cu);
+        Instrument classMethods = Instrument.parseClass(cu);
 
 //        @todo 4.2: generate test requirements (branch coverage/MCDC)
 
-//        TestDataGenerator.randomBranchGeneration();
+        TestDataGenerator.randomBranchGeneration(classMethods);
 
 //        @todo 4.4 generate test data.
 
