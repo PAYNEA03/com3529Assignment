@@ -20,14 +20,14 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
 
-        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[1]));
+        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[2]));
 
         Instrument classMethods = Instrument.parseClass(cu);
 
 //        @todo 4.2: generate test requirements (branch coverage/MCDC)
 
-//        TestDataGenerator.randomBranchGeneration(classMethods);
-        TestDataGenerator.searchBasedGeneration(classMethods);
+        TestDataGenerator.randomBranchGeneration(classMethods);
+//        TestDataGenerator.searchBasedGeneration(classMethods);
 
 
 //        @todo 4.4 generate test data.

@@ -19,6 +19,7 @@ public class TestDataGenerator {
 
         Random r = new Random();
         Set<Integer> coveredBranches = new TreeSet<>();
+        Set<Integer> coveredConditions = new TreeSet<>();
 
         for (int i=0; i < ITERATIONS; i ++) {
 
@@ -32,7 +33,7 @@ public class TestDataGenerator {
 
             // print iteration progress and pass updated hashmap with random values attached
             System.out.println("~~~~~~~~~~~~Call " + (i+1) + "~~~~~~~~~");
-            Object result = Instrumented.assignVariables(classMethods.methodDetails, coveredBranches);
+            Object result = Instrumented.assignVariables(classMethods.methodDetails, coveredBranches, coveredConditions);
             System.out.println("-> " + result);
             System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
@@ -122,7 +123,7 @@ public class TestDataGenerator {
     }
 
 //    @todo see assignment brief, mentioned this may be needed for Search based method?
-    public static boolean logCondition(int id, Boolean condition) {
+    public static boolean logCondition(int id, Boolean condition, Set<Integer> coveredConditions ) {
 //        System.out.println(condition);
         boolean result = condition;
         // ... log the id somewhere, along with the result,
