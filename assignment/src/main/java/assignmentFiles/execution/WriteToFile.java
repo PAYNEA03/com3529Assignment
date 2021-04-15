@@ -1,8 +1,13 @@
 package assignmentFiles.execution;
 
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+
 import java.io.FileWriter;
 import java.io.IOException;
-
+import java.util.HashMap;
+import java.util.List;
 
 
 public class WriteToFile {
@@ -14,7 +19,8 @@ public class WriteToFile {
             FileWriter myWriter = new FileWriter(path);
             myWriter.write(myClass);
             myWriter.close();
-            System.out.println("Successfully wrote to the file.");
+            System.out.println("Successfully wrote " + path);
+            System.out.println("");
         } catch (IOException e) {
             System.out.println("An error occurred.");
             e.printStackTrace();
@@ -22,14 +28,12 @@ public class WriteToFile {
         return path;
 
     }
-<<<<<<< HEAD
-=======
 
     public static String writeInstrumentedFile(CompilationUnit cu, List<String> className, HashMap<String, List> methodDetail) {
         String newName = "Instrumented";
         String filePath = "src/main/java/assignmentFiles/instrumentedFiles/";
         ClassOrInterfaceDeclaration myClass = cu.getClassByName(className.get(0)).get();
-        Instrument.createMethod(myClass, methodDetail);
+        Instrument.createVariableAssignMethod(myClass, methodDetail);
 
         myClass.setName(newName);
         cu.setPackageDeclaration("assignmentFiles.instrumentedFiles");
@@ -48,5 +52,4 @@ public class WriteToFile {
         return createFile;
 
     }
->>>>>>> parent of ad6548c... minor bug fixes
 }
