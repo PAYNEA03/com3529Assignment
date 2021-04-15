@@ -19,6 +19,9 @@ public class Main {
     };
 
     public static void main(String[] args) throws Exception {
+        // args[0] - coverage criteria out of branch and MCDC
+        // args[1] - type of search
+        // args[2] - will presumably be the java file they want to instrument
 
         CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[2]));
 
@@ -26,7 +29,8 @@ public class Main {
 
 //        @todo 4.2: generate test requirements (branch coverage/MCDC)
 
-        TestDataGenerator.randomBranchGeneration(classMethods);
+        TestDataGenerator generator = new TestDataGenerator(args[0],args[1]);
+        generator.testGeneration(classMethods);
 //        TestDataGenerator.searchBasedGeneration(classMethods);
 
 

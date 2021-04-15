@@ -14,8 +14,26 @@ public class TestDataGenerator {
     static final int MIN_INT = -15;
     static final int MAX_INT = 15;
 
+    private boolean random = false;
+    private boolean branch = false;
 
-    public static void randomBranchGeneration(Instrument classMethods) throws Exception {
+    public TestDataGenerator(String coverageCriteria,String generationType){
+        if (generationType == "search"){
+            //
+        }
+        else {
+            random = true;
+        }
+        if (coverageCriteria == "MCDC"){
+            //set up MCDC list of pairs of boolean lists, elements of the greater list is a pair of correlated MCDC
+            //
+        }
+        else {
+            branch = true;
+        }
+    }
+
+    public static void testGeneration(Instrument classMethods) throws Exception {
 
         Random r = new Random();
         Set<Integer> coveredBranches = new TreeSet<>();
@@ -50,6 +68,14 @@ public class TestDataGenerator {
 
 
 
+    }
+
+    private static HashMap generateRandomInputs(){
+        return null;
+    }
+
+    private static HashMap generateInputsBySearch(){
+        return null;
     }
 
     public static void searchBasedGeneration(Instrument classMethods) {
