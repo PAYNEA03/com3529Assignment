@@ -29,7 +29,10 @@ public class Main {
 
 //        @todo 4.2: generate test requirements (branch coverage/MCDC)
 
-        TestDataGenerator generator = new TestDataGenerator(args[0],args[1]);
+        String coverage = "branch"; // args[0];
+        String search = "random"; // args[1]
+
+        TestDataGenerator generator = new TestDataGenerator(coverage,search);
         generator.testGeneration(classMethods);
 //        TestDataGenerator.searchBasedGeneration(classMethods);
 

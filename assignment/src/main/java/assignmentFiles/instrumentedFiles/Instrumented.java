@@ -67,11 +67,10 @@ public class Instrumented {
         return type;
     }
 
-    public static Object assignVariables(HashMap<String, List> paramList, Set<Integer> coveredBranches, Set<Integer> coveredConditions) {
+    public static Object assignVariables(Map.Entry<String, List> paramList, Set<Integer> coveredBranches, Set<Integer> coveredConditions) {
         Object result = "empty";
-        for (Map.Entry<String, List> methodEntry : paramList.entrySet()) {;
-        String methodName = methodEntry.getKey();
-        List methodParams = methodEntry.getValue();
+        String methodName = paramList.getKey();
+        List methodParams = paramList.getValue();
         if (methodName.equals("classify")) {;
         System.out.println("********Parsing Method: classify ****");;
         int side1 = TestDataGenerator.assignValues("side1", methodParams);
@@ -82,7 +81,6 @@ public class Instrumented {
         } catch (Exception e) {;
         System.out.println(e);
         System.out.println("Something went wrong passing values to function");
-        };
         };
         };
         return result;

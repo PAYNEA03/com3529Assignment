@@ -2,6 +2,9 @@ package assignmentFiles.execution;
 
 import assignmentFiles.instrumentedFiles.*;
 import com.github.javaparser.ast.expr.Expression;
+import com.github.javaparser.ast.type.Type;
+import com.github.javaparser.utils.Pair;
+
 
 import java.io.File;
 import java.util.*;
@@ -13,49 +16,129 @@ public class TestDataGenerator {
     static final int ITERATIONS = 1250;
     static final int MIN_INT = -15;
     static final int MAX_INT = 15;
+    static final double MIN_DOUBLE = -15.;
+    static final double MAX_DOUBLE = 15.;
 
-    private boolean random = false;
-    private boolean branch = false;
+    private String generationType;
+    private String coverageCriteria;
 
-    public TestDataGenerator(String coverageCriteria,String generationType){
+    private Random rand;
+
+    private List<Pair<List<Boolean>,List<Boolean>>> MCDCcoverage;
+
+    private List<Object> nextParameterSet;
+
+    public TestDataGenerator(String cc,String gt){
+        coverageCriteria = cc;
+        generationType = gt;
         if (generationType == "search"){
             //
         }
         else {
-            random = true;
+            rand = new Random();
         }
         if (coverageCriteria == "MCDC"){
-            //set up MCDC list of pairs of boolean lists, elements of the greater list is a pair of correlated MCDC
-            //
-        }
-        else {
-            branch = true;
+            //set up MCDC list of pairs of boolean lists,
+            // elements of the greater list is a pair of correlated MCDC conditions with matching major and minor conditions
+            // where the major term decides the predicate of a branch (can be any branch as every other minor condition is
+            // the same)
+            MCDCcoverage = new ArrayList<>();
+            //every index is a different coverage pair
+            //every index in the pair lists is the condition id
         }
     }
 
-    public static void testGeneration(Instrument classMethods) throws Exception {
-
-        Random r = new Random();
+    public void testGeneration(Instrument classMethods) throws Exception {
         Set<Integer> coveredBranches = new TreeSet<>();
         Set<Integer> coveredConditions = new TreeSet<>();
+        Set<Integer> oldCoveredBranches = new TreeSet<>();
+        //Set<Integer> oldCoveredConditions = new TreeSet<>();
+
+        //the test case output file
+        //format MethodName - List of (each element is a test case) of Lists (each element is a parameter for that method)
+        HashMap<String,List<List<Object>>> testCases = new HashMap<>();
+        for (String classMethod : classMethods.methodDetails.keySet()){
+            testCases.put(classMethod,new ArrayList<>());
+        }
 
         for (int i=0; i < ITERATIONS; i ++) {
 
-            // iterate through hashmap parameters and assign a value to each variable
-            for (List li : classMethods.methodDetails.values()) {
-                for (Object h : li) {
-                    HashMap t = (HashMap) h;
-                    t.put("value", randomInt(r));
+            // iterate through all the class methods
+            for (Map.Entry<String,List> methodEntry: classMethods.methodDetails.entrySet()) {
+                //if its a search based technique calculate the next set of parameters in the search for every method
+                if (generationType == "search"){
+                    generateInputsBySearch();
                 }
+
+                int paramNum = 0;
+                //assign values to each parameter variable
+                for (Object h : methodEntry.getValue()) {
+                    HashMap t = (HashMap) h;
+                    String parameterType = ((Type)t.get("paramType")).asString();
+                    //System.out.println(parameterType); getting the parameter type works :)
+                    if (parameterType == "double"){
+                        t.put("value", generateDouble(paramNum));
+                    }
+                    else {
+                        t.put("value", generateInt(paramNum));
+                    }
+
+                    paramNum++;
+                }
+
+                //if its MCDC we want to reset coveredBranches and coveredConditions so we can check their connection
+                if (coverageCriteria == "MCDC"){
+                    coveredBranches = new TreeSet<>();
+                    coveredConditions = new TreeSet<>();
+                }
+                //otherwise before we check what branches and conditions are now covered we must save which were covered before
+                else if (coverageCriteria == "branch") {
+                    oldCoveredBranches = coveredBranches;
+                    //oldCoveredConditions = coveredConditions;
+                }
+
+                // print iteration progress and pass updated hashmap with correctly generated values attached
+                System.out.println("~~~~~~~~~~~~Call " + (i+1) + "~~~~~~~~~");
+                Object result = Instrumented.assignVariables(methodEntry, coveredBranches, coveredConditions);
+                System.out.println("-> " + result);
+                System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
+                //evaluate whether these inputs are worth making into a test case
+                boolean success = false;
+                if (coverageCriteria == "MCDC"){
+                    //check coveredBranches against MCDCoverage list, non-appearing conditions are considered false
+
+                    //add everything to MCDCoverage but only add it to the testCases if a second pair is found for that major condition
+                    //i.e. search through to find if
+                    // 1. its already in the MCDCoverage
+                    // 2. its got a partner test case that is
+                    //      - this test case with 1 condition flipped and everything else the same
+                    //      - any associated conditions are flipped too
+                    //      TODO perhaps you could be sure the condition-predicate linkage was confirmed if coveredBranch()
+                    //       went around the if statement and stored whether it was true or false like logCondition
+                }
+                //otherwise before we check what branches and conditions are now covered we must save which were covered before
+                else if (coverageCriteria == "branch") {
+                    //remove all the old covered branches
+                    coveredBranches.removeAll(oldCoveredBranches);
+                    //if theres any left then there was newly covered branches
+                    if (coveredBranches.size() > 0){
+                        success = true;
+                    }
+                    coveredBranches.addAll(oldCoveredBranches);
+                }
+
+                //if the test case was a success add it to the testCases
+                if (success){
+                    testCases.get(methodEntry.getKey()).addAll(methodEntry.getValue());
+                    //also don't forget to add to MCDCoverage list if its MCDC coverage
+                }
+
+
+                //evaluate whether the target coverage criteria have been reached for this method
+                //if so then somehow delete this methodEntry from the entrySet and carry on until all of them are met
             }
 
-            // print iteration progress and pass updated hashmap with random values attached
-            System.out.println("~~~~~~~~~~~~Call " + (i+1) + "~~~~~~~~~");
-            Object result = Instrumented.assignVariables(classMethods.methodDetails, coveredBranches, coveredConditions);
-            System.out.println("-> " + result);
-            System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-
-            System.out.println("");
 
         }
 
@@ -70,12 +153,27 @@ public class TestDataGenerator {
 
     }
 
-    private static HashMap generateRandomInputs(){
-        return null;
+    private int generateInt(int i){
+        if (generationType == "search"){
+            return (int)nextParameterSet.get(i);
+        }
+        else { //if (generationType == "random"){
+            return randomInt(rand);
+        }
     }
 
-    private static HashMap generateInputsBySearch(){
-        return null;
+    private double generateDouble(int i){
+        if (generationType == "search"){
+            return (double)nextParameterSet.get(i);
+        }
+        else {//if (generationType == "random"){
+            return randomDouble(rand);
+        }
+    }
+
+    private List generateInputsBySearch(){
+        nextParameterSet = new ArrayList<Object>();
+        return nextParameterSet;
     }
 
     public static void searchBasedGeneration(Instrument classMethods) {
@@ -138,6 +236,17 @@ public class TestDataGenerator {
         }
     }
 
+    /** randomDouble is an altered version of randomInt from
+     * the week5 lectures in the RandomlyTestTriangle class
+     * */
+    static double randomDouble(Random r) {
+        if (MIN_DOUBLE == Double.MIN_VALUE && MAX_DOUBLE == Double.MAX_VALUE) {
+            return r.nextDouble();
+        } else {
+            return (MAX_DOUBLE - MIN_DOUBLE + 1.)*r.nextDouble() + MIN_DOUBLE;
+        }
+    }
+
     /** coveredBranch is taken from the week5 lectures of the RandomlyTestTriangle class and
      * has not been changed in any form
      * */
@@ -148,7 +257,7 @@ public class TestDataGenerator {
         }
     }
 
-//    @todo see assignment brief, mentioned this may be needed for Search based method?
+//    @todo needed for MCDC - can we change Set<Integer> to HashMap<Integer,Boolean> so that we know if the loggedCondition was true or not
     public static boolean logCondition(int id, Boolean condition, Set<Integer> coveredConditions ) {
 //        System.out.println(condition);
         boolean result = condition;

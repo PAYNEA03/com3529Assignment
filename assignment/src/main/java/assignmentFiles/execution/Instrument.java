@@ -78,6 +78,73 @@ public class Instrument {
 
     }
 
+    public static void createVariableAssignMethod2(ClassOrInterfaceDeclaration type, HashMap<String, List> methodDetail) {
+//        set method name
+        MethodDeclaration method = type.addMethod("assignVariables");
+//        set method dynamics
+        method.setModifiers(Modifier.Keyword.PUBLIC, Modifier.Keyword.STATIC)
+                .setType("Object")
+                .addParameter("Map.Entry<String,List>", "paramList")
+                .addParameter("Set<Integer>","coveredBranches")
+                .addParameter("Set<Integer>","coveredConditions")
+//       initialize body and set up for loop to iterate through the hashmap method names
+                .setBody(new BlockStmt()
+                        .addStatement(new NameExpr("Object result = \"empty\""))
+                      //1  .addStatement(new NameExpr("for (Map.Entry<String, List> methodEntry : paramList.entrySet()) {"))
+                        .addStatement(new NameExpr("String methodName = paramList.getKey()"))
+                        .addStatement(new NameExpr("List methodParams = paramList.getValue()")));
+
+//        gets the method name from the hashmap, and writes an if statement that has its name to ensure its called.
+        for (Map.Entry<String, List> entry : methodDetail.entrySet()) {
+            String key = entry.getKey();
+            List value = entry.getValue();
+            String paramCall = "";
+
+//            method.getBody gets info between curly braces. addStatement allows adding new line, new NameExpr allows
+//            entering statement details as a string
+            method.getBody().get()
+                    .addStatement(new NameExpr("if (methodName.equals(\"" + key + "\")) {"))
+                    .addStatement(new NameExpr("System.out.println(\"********Parsing Method: " + key +" ****\");"));
+
+//            for each of the methods parameters, initialise the variable and set up a call to assign values, passing in the list of parameters
+//            and the variable name to initialise. the assignValues method in testdatagenerator will matchup the hashmap to the name
+            for (Object params : value) {
+                HashMap detail = (HashMap) params;
+                String varName = detail.get("paramName").toString();
+                Object varType = detail.get("paramType").toString();
+//                parameter builder, concatonates string for using in add statement.
+                if (paramCall.isEmpty()) {
+                    paramCall = varName;
+                } else {
+                    paramCall = paramCall + ", " + varName;
+                }
+//                add line to assign values to method parameters
+                method.getBody().get().addStatement(new NameExpr(varType + " "+ varName+" = TestDataGenerator.assignValues(\"" + varName + "\", methodParams)"));
+            }
+
+//            try/catch is incase values outside methods normal range (40 used in 30 day month for example)
+            method.getBody().get()
+                    .addStatement(new NameExpr("try {"));
+//            check if methd has parameters, if not just add loggers and assign to variable to get return results
+            if (paramCall.isEmpty()) {
+                method.getBody().get().addStatement(new NameExpr(key +"(coveredBranches, coveredConditions)"));
+            } else {
+                method.getBody().get().addStatement(new NameExpr("result = " + key + "(" + paramCall +", coveredBranches, coveredConditions)"));
+            }
+            method.getBody().get().addStatement(new NameExpr("} catch (Exception e) {"))
+                    .addStatement(new NameExpr("System.out.println(e)"))
+                    .addStatement(new NameExpr("System.out.println(\"Something went wrong passing values to function\")"))
+                    .addStatement(new NameExpr("}"))
+                    .addStatement(new NameExpr("}"));
+        }
+
+        method.getBody().get()
+              //1  .addStatement(new NameExpr("}"))
+                .addStatement(new NameExpr("return result"));
+
+
+    }
+
     public static void createVariableAssignMethod(ClassOrInterfaceDeclaration type, HashMap<String, List> methodDetail) {
 //        set method name
         MethodDeclaration method = type.addMethod("assignVariables");

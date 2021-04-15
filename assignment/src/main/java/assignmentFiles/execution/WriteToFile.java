@@ -37,7 +37,8 @@ public class WriteToFile {
         myClass.setName(newName);
 
 //        choose additional methods to add
-        Instrument.createVariableAssignMethod(myClass, methodDetail);
+        //Instrument.createVariableAssignMethod(myClass, methodDetail);
+        Instrument.createVariableAssignMethod2(myClass, methodDetail);
 
 //    set package details and imports
         cu.setPackageDeclaration("assignmentFiles.instrumentedFiles");
