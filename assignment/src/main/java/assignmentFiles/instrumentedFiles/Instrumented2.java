@@ -1,10 +1,13 @@
 package assignmentFiles.instrumentedFiles;
 
-import java.util.TreeSet;
-import java.util.Set;
-import assignmentFiles.execution.*;
+import assignmentFiles.execution.TestDataGenerator;
 
-public class InstrumentedCalendar {
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+
+public class Instrumented2 {
 
     public static int daysBetweenTwoDates(int year1, int month1, int day1, int year2, int month2, int day2, Set<Integer> coveredBranches) {
         int days = 0;
@@ -110,8 +113,39 @@ public class InstrumentedCalendar {
         return month == 2 && isLeapYear(year, coveredBranches) ? 29 : daysInMonthNonLeapYear[month - 1];
     }
 
-    public static void testingGetterAndSetter(String[] paramList, Set<Integer> coveredBranches) {
-        String out;
-        String out2;
+    public static Object assignVariables(HashMap<String, List> paramList, Set<Integer> coveredBranches) {
+        Object result = "Empty";
+
+        for (Map.Entry<String, List> methodEntry : paramList.entrySet()) {
+            String methodName = methodEntry.getKey();
+            List methodParams = methodEntry.getValue();
+
+            if (methodName.equals("daysInMonth")) {
+                int month = TestDataGenerator.assignValues("month", methodParams);
+                int year = TestDataGenerator.assignValues("year", methodParams);
+
+                result = daysInMonth(month,year,coveredBranches);
+
+            } else if (methodName.equals("isLeapYear")) {
+                int year = TestDataGenerator.assignValues("year", methodParams);
+                result = isLeapYear(year,coveredBranches);
+
+            } else if (methodName.equals("daysBetweenTwoDates")) {
+                int year1 = TestDataGenerator.assignValues("year1", methodParams);;
+                int month1 = TestDataGenerator.assignValues("month1", methodParams);;
+                int day1 = TestDataGenerator.assignValues("day1", methodParams);;
+                int year2 = TestDataGenerator.assignValues("year2", methodParams);;
+                int month2 = TestDataGenerator.assignValues("month2", methodParams);;
+                int day2 = TestDataGenerator.assignValues("day2", methodParams);;
+
+                result = daysBetweenTwoDates(year1, month1, day1, year2, month2, day2, coveredBranches);
+            }
+        }
+
+        return result;
     }
+
+
+
+
 }

@@ -1,8 +1,12 @@
 package assignmentFiles.execution;
 
+import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+
 import java.io.FileWriter;
 import java.io.IOException;
-
+import java.util.List;
 
 
 public class WriteToFile {
@@ -21,6 +25,30 @@ public class WriteToFile {
             e.printStackTrace();
         }
         return path;
+
+    }
+
+    public static String writeInstrumentedFile(CompilationUnit cu, List<String> className) {
+        String newName = "Instrumented";
+        String filePath = "src/main/java/assignmentFiles/instrumentedFiles/";
+        ClassOrInterfaceDeclaration myClass = cu.getClassByName(className.get(0)).get();
+        Instrument.createMethod(myClass);
+
+        myClass.setName(newName);
+        cu.setPackageDeclaration("assignmentFiles.instrumentedFiles");
+
+        cu.addImport(new ImportDeclaration("java.util.TreeSet", false, false));
+        cu.addImport(new ImportDeclaration("java.util.Set", false, false));
+        cu.addImport(new ImportDeclaration("java.util.HashMap", false, false));
+        cu.addImport(new ImportDeclaration("java.util.List", false, false));
+        cu.addImport(new ImportDeclaration("java.util.Map", false, false));
+        cu.addImport(new ImportDeclaration("assignmentFiles.execution", false, true));
+
+
+        writeClass(cu.toString(),newName,filePath);
+        String createFile = filePath + newName + ".java";
+
+        return createFile;
 
     }
 }

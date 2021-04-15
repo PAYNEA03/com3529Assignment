@@ -1,7 +1,6 @@
 package assignmentFiles.execution;
 
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
@@ -11,19 +10,19 @@ import com.github.javaparser.ast.expr.*;
 import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
-import javassist.expr.Expr;
 
 import java.util.*;
 
 
 public class Instrument {
 
-    public static int branchCount = 0;
-    public static int conditionCount = 0;
-
-    static HashMap<Integer, Expression> ifStmtLogs = new HashMap<>();
+    private static int branchCount = 0;
+    private static int conditionCount = 0;
+    private static HashMap<Integer, Expression> ifStmtLogs = new HashMap<>();
+    private static List<String> classNames = new ArrayList<>();
 
     String path;
+    String className;
     HashMap<String, List> methodDetails;
     HashMap<Integer, Expression> ifStmts;
 
@@ -45,9 +44,8 @@ public class Instrument {
     public static Instrument parseClass(CompilationUnit cu) {
 
         // get class name
-        List<String> className = new ArrayList<>();
         VoidVisitor<List<String>> classNameVisitor = new ClassNameCollector();
-        classNameVisitor.visit(cu,className);
+        classNameVisitor.visit(cu,classNames);
 
         // set param to instrument into class
         String[] param = {"Set<Integer>", "coveredBranches"};
@@ -66,7 +64,7 @@ public class Instrument {
         whileStmtParser.visit(cu,null);
 
         // write instrumented file
-        String writtenFilePath = writeInstrumentedFile(cu, className);
+        String writtenFilePath = WriteToFile.writeInstrumentedFile(cu, classNames);
 
         Instrument file = new Instrument(writtenFilePath, methodDetail);
 
@@ -74,99 +72,44 @@ public class Instrument {
 
     }
 
-    private static void createMethod(ClassOrInterfaceDeclaration type) {
-        MethodDeclaration method = type.addMethod("testingGetterAndSetter");
+    public static void createMethod(ClassOrInterfaceDeclaration type) {
+        MethodDeclaration method = type.addMethod("assignVariables");
         method.setModifiers(Modifier.Keyword.PUBLIC, Modifier.Keyword.STATIC)
-                .setType("void")
-                .addParameter("String[]","paramList")
+                .setType("Object")
+                .addParameter("HashMap<String, List>", "paramList")
                 .addParameter("Set<Integer>","coveredBranches")
                 .setBody(new BlockStmt()
-                        .addStatement(new NameExpr("String out"))
-                        .addStatement(new NameExpr("String out2")));
+                        .addStatement(new NameExpr("Object result = \"empty\""))
+                        .addStatement(new NameExpr("for (Map.Entry<String, List> methodEntry : paramList.entrySet()) {"))
+                        .addStatement(new NameExpr("String methodName = methodEntry.getKey()"))
+                        .addStatement(new NameExpr("List methodParams = methodEntry.getValue()"))
 
-    }
+                        
 
-    private static String writeInstrumentedFile(CompilationUnit cu, List<String> className) {
-        String newName = "Instrumented"+className.get(0);
-        String filePath = "src/main/java/assignmentFiles/instrumentedFiles/";
-        ClassOrInterfaceDeclaration myClass = cu.getClassByName(className.get(0)).get();
-        createMethod(myClass);
+                        .addStatement(new NameExpr("if (methodName.equals(\"daysInMonth\")) {"))
+                        .addStatement(new NameExpr("int month = TestDataGenerator.assignValues(\"month\", methodParams)"))
+                        .addStatement(new NameExpr("int year = TestDataGenerator.assignValues(\"year\", methodParams)"))
+                        .addStatement(new NameExpr("result = daysInMonth(month,year,coveredBranches)"))
 
-        myClass.setName(newName);
-        cu.setPackageDeclaration("assignmentFiles.instrumentedFiles");
+                        .addStatement(new NameExpr("} else if (methodName.equals(\"isLeapYear\")) {"))
+                        .addStatement(new NameExpr("int year = TestDataGenerator.assignValues(\"year\", methodParams)"))
+                        .addStatement(new NameExpr("result = isLeapYear(year,coveredBranches)"))
 
-        cu.addImport(new ImportDeclaration("java.util.TreeSet", false, false));
-        cu.addImport(new ImportDeclaration("java.util.Set", false, false));
-        cu.addImport(new ImportDeclaration("assignmentFiles.execution", false, true));
+                        .addStatement(new NameExpr("} else if (methodName.equals(\"daysBetweenTwoDates\")) {"))
+                        .addStatement(new NameExpr("int year1 = TestDataGenerator.assignValues(\"year1\", methodParams)"))
+                        .addStatement(new NameExpr("int month1 = TestDataGenerator.assignValues(\"month1\", methodParams)"))
+                        .addStatement(new NameExpr("int day1 = TestDataGenerator.assignValues(\"day1\", methodParams)"))
+                        .addStatement(new NameExpr("int year2 = TestDataGenerator.assignValues(\"year2\", methodParams)"))
+                        .addStatement(new NameExpr("int month2 = TestDataGenerator.assignValues(\"month2\", methodParams)"))
+                        .addStatement(new NameExpr("int day2 = TestDataGenerator.assignValues(\"day2\", methodParams)"))
+                        .addStatement(new NameExpr("result = daysBetweenTwoDates(year1, month1, day1, year2, month2, day2, coveredBranches)"))
 
+                        .addStatement(new NameExpr("}"))
+                        .addStatement(new NameExpr("}"))
 
-        WriteToFile.writeClass(cu.toString(),newName,filePath);
-        String createFile = filePath + newName + ".java";
+                        .addStatement(new NameExpr("return result"))
+                );
 
-        return createFile;
-
-    }
-
-//    https://stackoverflow.com/questions/65377062/javaparser-how-to-get-classname-in-compilationunit
-    private static class ClassNameCollector extends VoidVisitorAdapter<List<String>>{
-        @Override
-        public void visit(ClassOrInterfaceDeclaration n, List<String> collector) {
-            super.visit(n, collector);
-            collector.add(n.getNameAsString());
-        }
-    }
-
-    public static class MethodNameCollector extends VoidVisitorAdapter<List<String>> {
-        @Override
-        public void visit(MethodDeclaration md, List<String> collector) {
-            super.visit(md, collector);
-            collector.add(md.getNameAsString());
-        }
-    }
-
-    private static class MethodParser extends VoidVisitorAdapter<HashMap<String, List>> {
-        @Override
-        public void visit(MethodDeclaration md, HashMap<String, List> methodList) {
-            super.visit(md, methodList);
-//            gets list of methodNames in class
-            List<String> methodNames = new ArrayList<>();
-            VoidVisitor<List<String>> methodNameCollector = new MethodNameCollector();
-            methodNameCollector.visit(md.findCompilationUnit().get(),methodNames);
-
-//            all parameters found in method
-            List<Parameter> methodParameters = md.getParameters();
-
-//           parameter list builder
-            List<HashMap> parameterList = new ArrayList<>();
-
-//            populate parameter list details
-            for(Parameter p:methodParameters){
-                HashMap<String, Object> methodDetails = new HashMap<>();
-                methodDetails.put("paramName", p.getName());
-                methodDetails.put("paramType", p.getType());
-                parameterList.add(methodDetails);
-            }
-//            add parameter details and method name to main method list
-            methodList.put(md.getNameAsString(), parameterList);
-
-//            parse method instrumentations
-            // add arg to list of parameters in all methods
-            md.addParameter("Set<Integer>", "coveredBranches");
-
-            //add parameter arg to all method calls in class
-            VoidVisitor methodCall = new Instrument.MethodCallVisitor();
-            md.accept(methodCall,methodNames);
-        }
-    }
-
-    private static class MethodCallVisitor extends VoidVisitorAdapter<List<String>> {
-        @Override
-        public void visit(MethodCallExpr n, List<String> methodNames) {
-            if (methodNames.contains(n.getNameAsString())) {
-                n.addArgument("coveredBranches");
-            }
-            super.visit(n, methodNames);
-        }
     }
 
     private static String addBranchLogger() {
@@ -224,13 +167,76 @@ public class Instrument {
                 }
 
             }
-        //enclosed expression is in brackets, so (x > r) instead of x > r, converts then re-calls method
+            //enclosed expression is in brackets, so (x > r) instead of x > r, converts then re-calls method
         } else if (expr instanceof EnclosedExpr) {
             EnclosedExpr enclosedChild = (EnclosedExpr) expr;
             BinaryExpr parsed = enclosedChild.getInner().asBinaryExpr();
             recursiveConditionParser(parsed);
         }
 
+    }
+
+    //    https://stackoverflow.com/questions/65377062/javaparser-how-to-get-classname-in-compilationunit
+    private static class ClassNameCollector extends VoidVisitorAdapter<List<String>>{
+        @Override
+        public void visit(ClassOrInterfaceDeclaration n, List<String> collector) {
+            super.visit(n, collector);
+            collector.add(n.getNameAsString());
+        }
+    }
+
+    public static class MethodNameCollector extends VoidVisitorAdapter<List<String>> {
+        @Override
+        public void visit(MethodDeclaration md, List<String> collector) {
+            super.visit(md, collector);
+            collector.add(md.getNameAsString());
+        }
+    }
+
+    private static class MethodParser extends VoidVisitorAdapter<HashMap<String, List>> {
+        @Override
+        public void visit(MethodDeclaration md, HashMap<String, List> methodList) {
+            super.visit(md, methodList);
+//            gets list of methodNames in class
+            List<String> methodNames = new ArrayList<>();
+            VoidVisitor<List<String>> methodNameCollector = new MethodNameCollector();
+            methodNameCollector.visit(md.findCompilationUnit().get(),methodNames);
+
+//            all parameters found in method
+            List<Parameter> methodParameters = md.getParameters();
+
+//           parameter list builder
+            List<HashMap> parameterList = new ArrayList<>();
+
+//            populate parameter list details
+            for(Parameter p:methodParameters){
+                HashMap<String, Object> methodDetails = new HashMap<>();
+                methodDetails.put("paramName", p.getName());
+                methodDetails.put("paramType", p.getType());
+//                methodDetails.put("value", 0);
+                parameterList.add(methodDetails);
+            }
+//            add parameter details and method name to main method list
+            methodList.put(md.getNameAsString(), parameterList);
+
+//            parse method instrumentations
+            // add arg to list of parameters in all methods
+            md.addParameter("Set<Integer>", "coveredBranches");
+
+            //add parameter arg to all method calls in class
+            VoidVisitor methodCall = new Instrument.MethodCallVisitor();
+            md.accept(methodCall,methodNames);
+        }
+    }
+
+    private static class MethodCallVisitor extends VoidVisitorAdapter<List<String>> {
+        @Override
+        public void visit(MethodCallExpr n, List<String> methodNames) {
+            if (methodNames.contains(n.getNameAsString())) {
+                n.addArgument("coveredBranches");
+            }
+            super.visit(n, methodNames);
+        }
     }
 
     private static class WhileStmtParser extends VoidVisitorAdapter<Void> {

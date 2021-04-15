@@ -30,7 +30,7 @@ public class Main {
 
 //        @todo 4.2: generate test requirements (branch coverage/MCDC)
 
-        TestDataGenerator.randomBranchGeneration(classMethods);
+//        TestDataGenerator.randomBranchGeneration(classMethods);
 
 //        @todo 4.4 generate test data.
 
