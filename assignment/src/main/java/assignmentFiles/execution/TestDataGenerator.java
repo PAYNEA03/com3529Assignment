@@ -50,9 +50,9 @@ public class TestDataGenerator {
 
     public void testGeneration(Instrument classMethods) throws Exception {
         Set<Integer> coveredBranches = new TreeSet<>();
-        Set<Integer> coveredConditions = new TreeSet<>();
+        HashMap<Integer,Boolean> coveredConditions = new HashMap<>();
         Set<Integer> oldCoveredBranches = new TreeSet<>();
-        //Set<Integer> oldCoveredConditions = new TreeSet<>();
+        Set<Integer> definitiveCoveredBranches = new TreeSet<>();
 
         //the test case output file
         //format MethodName - List of (each element is a test case) of Lists (each element is a parameter for that method)
@@ -79,7 +79,7 @@ public class TestDataGenerator {
                     if (parameterType == "double"){
                         t.put("value", generateDouble(paramNum));
                     }
-                    else {
+                    else { //if (parameterType == "int"){
                         t.put("value", generateInt(paramNum));
                     }
 
@@ -89,12 +89,7 @@ public class TestDataGenerator {
                 //if its MCDC we want to reset coveredBranches and coveredConditions so we can check their connection
                 if (coverageCriteria == "MCDC"){
                     coveredBranches = new TreeSet<>();
-                    coveredConditions = new TreeSet<>();
-                }
-                //otherwise before we check what branches and conditions are now covered we must save which were covered before
-                else if (coverageCriteria == "branch") {
-                    oldCoveredBranches = coveredBranches;
-                    //oldCoveredConditions = coveredConditions;
+                    coveredConditions = new HashMap<>();
                 }
 
                 // print iteration progress and pass updated hashmap with correctly generated values attached
@@ -117,39 +112,45 @@ public class TestDataGenerator {
                     //      TODO perhaps you could be sure the condition-predicate linkage was confirmed if coveredBranch()
                     //       went around the if statement and stored whether it was true or false like logCondition
                 }
-                //otherwise before we check what branches and conditions are now covered we must save which were covered before
+                //otherwise we check what branches are now covered (i.e. aren't in the definitiveCoveredBranches)
+                //and if new branches were found then add these inputs as a test case
                 else if (coverageCriteria == "branch") {
                     //remove all the old covered branches
-                    coveredBranches.removeAll(oldCoveredBranches);
+                    coveredBranches.removeAll(definitiveCoveredBranches);
                     //if theres any left then there was newly covered branches
                     if (coveredBranches.size() > 0){
                         success = true;
+                        for (int newBranch : coveredBranches){
+                            System.out.println(" ** new branch covered: "+newBranch);
+                            definitiveCoveredBranches.add(newBranch);
+                        }
+
                     }
-                    coveredBranches.addAll(oldCoveredBranches);
                 }
 
                 //if the test case was a success add it to the testCases
                 if (success){
-                    testCases.get(methodEntry.getKey()).addAll(methodEntry.getValue());
-                    //also don't forget to add to MCDCoverage list if its MCDC coverage
+                    System.out.println("*** new test case: "+methodEntry.getValue().toString());
+                    testCases.get(methodEntry.getKey()).add(methodEntry.getValue());
+                    //also don't forget to add this test cases partner from MCDCoverage list if its MCDC coverage
                 }
 
 
                 //evaluate whether the target coverage criteria have been reached for this method
                 //if so then somehow delete this methodEntry from the entrySet and carry on until all of them are met
+                //TODO to do this with branch coverage will need a HashMap from method to number of branches
+                // (somehow link with Instrument.addBranchLogger())
             }
-
-
         }
 
         System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        System.out.println("Branch Coverage: " + coveredBranches.size() + "/" + classMethods.branchTotal);
-        System.out.println("Covered Branch IDs: " + coveredBranches);
+        System.out.println("Branch Coverage: " + definitiveCoveredBranches.size() + "/" + classMethods.branchTotal);
+        System.out.println("Covered Branch IDs: " + definitiveCoveredBranches);
         System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
         System.out.println("");
 
-
+        System.out.println(testCases.toString());
 
     }
 
@@ -252,15 +253,16 @@ public class TestDataGenerator {
      * */
     public static void coveredBranch(int id, Set<Integer> coveredBranches) {
         if (!coveredBranches.contains(id)) {
-            System.out.println("* covered new branch: " + id);
+            System.out.println("* branch covered: " + id);
             coveredBranches.add(id);
         }
     }
 
 //    @todo needed for MCDC - can we change Set<Integer> to HashMap<Integer,Boolean> so that we know if the loggedCondition was true or not
-    public static boolean logCondition(int id, Boolean condition, Set<Integer> coveredConditions ) {
+    public static boolean logCondition(int id, Boolean condition, HashMap<Integer,Boolean> coveredConditions ) {
 //        System.out.println(condition);
         boolean result = condition;
+        coveredConditions.put(id, result);
         // ... log the id somewhere, along with the result,
         // thereby storing whether the condition was executed
         // as true or false, for computing coverage later on...

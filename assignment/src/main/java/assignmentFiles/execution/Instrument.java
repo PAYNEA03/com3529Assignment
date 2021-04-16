@@ -86,7 +86,7 @@ public class Instrument {
                 .setType("Object")
                 .addParameter("Map.Entry<String,List>", "paramList")
                 .addParameter("Set<Integer>","coveredBranches")
-                .addParameter("Set<Integer>","coveredConditions")
+                .addParameter("HashMap<Integer,Boolean>","coveredConditions")
 //       initialize body and set up for loop to iterate through the hashmap method names
                 .setBody(new BlockStmt()
                         .addStatement(new NameExpr("Object result = \"empty\""))
@@ -322,7 +322,7 @@ public class Instrument {
 //            parse method instrumentations
             // add arg to list of parameters in all methods
             md.addParameter("Set<Integer>", "coveredBranches");
-            md.addParameter("Set<Integer>", "coveredConditions");
+            md.addParameter("HashMap<Integer,Boolean>", "coveredConditions");
 
 
             //add parameter arg to all method calls in class

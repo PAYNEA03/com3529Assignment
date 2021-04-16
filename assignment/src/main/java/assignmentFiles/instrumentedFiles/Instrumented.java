@@ -14,7 +14,7 @@ public class Instrumented {
         INVALID, SCALENE, EQUILATERAL, ISOSCELES
     }
 
-    public static Type classify(int side1, int side2, int side3, Set<Integer> coveredBranches, Set<Integer> coveredConditions) {
+    public static Type classify(int side1, int side2, int side3, Set<Integer> coveredBranches, HashMap<Integer, Boolean> coveredConditions) {
         Type type;
         if (TestDataGenerator.logCondition(1, side1 > side2, coveredConditions)) {
             TestDataGenerator.coveredBranch(1, coveredBranches);
@@ -67,7 +67,7 @@ public class Instrumented {
         return type;
     }
 
-    public static Object assignVariables(Map.Entry<String, List> paramList, Set<Integer> coveredBranches, Set<Integer> coveredConditions) {
+    public static Object assignVariables(Map.Entry<String, List> paramList, Set<Integer> coveredBranches, HashMap<Integer, Boolean> coveredConditions) {
         Object result = "empty";
         String methodName = paramList.getKey();
         List methodParams = paramList.getValue();
