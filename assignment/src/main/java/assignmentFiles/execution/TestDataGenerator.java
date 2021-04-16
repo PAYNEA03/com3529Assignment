@@ -3,12 +3,10 @@ package assignmentFiles.execution;
 import assignmentFiles.instrumentedFiles.*;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.type.Type;
-import com.github.javaparser.utils.Pair;
 
 
 import java.io.File;
 import java.util.*;
-import java.lang.reflect.Method;
 
 
 public class TestDataGenerator {
@@ -24,7 +22,19 @@ public class TestDataGenerator {
 
     private Random rand;
 
-    private List<Pair<List<Boolean>,List<Boolean>>> MCDCcoverage;
+    //MCDCoverage is a map from a conditionSequence (a string denoting the conditions truth values for an input)
+    // - said input is given as {"parameters":xyz} in the hashmap the conditionSequence maps to
+    // - the inputs has a corresponding branchSequence as a string and is given in the hashMap as {"branchSequence":xyz}
+    // - other inputs that have different yet matching conditionSequences (hamming distance of 1, 1 element different) are also in the hashmap
+    //    these other inputs also map to a hashmap with "parameters":xyz and "branchSequence":xyz and "conditionSequence":xyz
+    private HashMap<String,HashMap<String,Object>> MCDCoverage;
+    //when iterating through it check if new is already a key
+    // if not check if its got a hamming distance of 1 to any key
+    //  then add it to that key's hashmap only if its branchSequence is different - make test case (if first pairing add key parameters as one too)
+    // if no key is close make sure to check distance of all key partners as you go - if distance to any key is 1 + branchSequence different
+    //  then take the found partner and make it into a key, add new to it and make into a new test case but don't add the found partner as it'll already have one
+    // if not got a distance of 1 to any key in the current coverage add it as a new key
+    //otherwise if you find the conditionSequence anywhere in the hashmap then just move on, nothing is added
 
     private List<Object> nextParameterSet;
 
@@ -42,7 +52,7 @@ public class TestDataGenerator {
             // elements of the greater list is a pair of correlated MCDC conditions with matching major and minor conditions
             // where the major term decides the predicate of a branch (can be any branch as every other minor condition is
             // the same)
-            MCDCcoverage = new ArrayList<>();
+            MCDCoverage = new HashMap<>();
             //every index is a different coverage pair
             //every index in the pair lists is the condition id
         }
