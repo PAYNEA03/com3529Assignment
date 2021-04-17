@@ -23,7 +23,7 @@ public class Main {
         // args[1] - type of search
         // args[2] - will presumably be the java file they want to instrument
 
-        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[0]));
+        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[1]));
 
         Instrument classMethods = Instrument.parseClass(cu);
 

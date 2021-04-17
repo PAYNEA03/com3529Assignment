@@ -3,7 +3,7 @@ package assignmentFiles.execution;
 import assignmentFiles.instrumentedFiles.*;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.type.Type;
-
+import assignmentFiles.utils.Pair;
 
 import java.io.File;
 import java.util.*;
@@ -22,19 +22,26 @@ public class TestDataGenerator {
 
     private Random rand;
 
+    private HashMap<Integer,Boolean> coveredConditions;
+    //TODO make it so that in isNewMCDCTestCase this is filled out to True
+    // when that condition has a pair added for it, can use for evaluation of coverage because once all conditions have
+    // a pair coverage is 100% complete
+
     //MCDCoverage is a map from a conditionSequence (a string denoting the conditions truth values for an input)
     // - said input is given as {"parameters":xyz} in the hashmap the conditionSequence maps to
     // - the inputs has a corresponding branchSequence as a string and is given in the hashMap as {"branchSequence":xyz}
     // - other inputs that have different yet matching conditionSequences (hamming distance of 1, 1 element different) are also in the hashmap
-    //    these other inputs also map to a hashmap with "parameters":xyz and "branchSequence":xyz and "conditionSequence":xyz
+    //    these other inputs also map to a hashmap with "parameters":xyz and "branchSequence":xyz
     private HashMap<String,HashMap<String,Object>> MCDCoverage;
-    //when iterating through it check if new is already a key
-    // if not check if its got a hamming distance of 1 to any key
-    //  then add it to that key's hashmap only if its branchSequence is different - make test case (if first pairing add key parameters as one too)
-    // if no key is close make sure to check distance of all key partners as you go - if distance to any key is 1 + branchSequence different
-    //  then take the found partner and make it into a key, add new to it and make into a new test case but don't add the found partner as it'll already have one
-    // if not got a distance of 1 to any key in the current coverage add it as a new key
-    //otherwise if you find the conditionSequence anywhere in the hashmap then just move on, nothing is added
+
+    //use currentMethod to know which one is currently being tested so that when logConditions and coveredBranch is called
+    //we can store the name of the method that it resides in
+    private String currentMethod;
+    //TODO map the name of the method to the condition and the branch ids that appear in them to know the size of the necessary test suites
+    private HashMap<String,List<Integer>> conditionRecords = new HashMap<>();
+    private HashMap<String,List<Integer>> branchRecords = new HashMap<>();
+    //TODO maybe get logConditions and coveredBranch to pass the methodName of the method they're called from
+    // but its VERY IMPORTANT that all of them are gotten so we may need to put it deeper inside the parser!
 
     private List<Object> nextParameterSet;
 
@@ -75,6 +82,7 @@ public class TestDataGenerator {
 
             // iterate through all the class methods
             for (Map.Entry<String,List> methodEntry: classMethods.methodDetails.entrySet()) {
+                currentMethod = methodEntry.getKey();
                 //if its a search based technique calculate the next set of parameters in the search for every method
                 if (generationType == "search"){
                     generateInputsBySearch();
@@ -110,8 +118,16 @@ public class TestDataGenerator {
 
                 //evaluate whether these inputs are worth making into a test case
                 boolean success = false;
-                if (coverageCriteria == "MCDC"){
+                String testCasePartner = null;
+                if (coverageCriteria == "MCDC") {
                     //check coveredBranches against MCDCoverage list, non-appearing conditions are considered false
+                    //String[] results = isNewMCDCTestCase(methodEntry);
+                    //if (results[0]=="success"){
+                    //    success = true;
+                    //    if (results[1] != null){
+                    //        testCasePartner = results[1];
+                    //    }
+                    //}
 
                     //add everything to MCDCoverage but only add it to the testCases if a second pair is found for that major condition
                     //i.e. search through to find if
@@ -143,13 +159,24 @@ public class TestDataGenerator {
                     System.out.println("*** new test case: "+methodEntry.getValue().toString());
                     testCases.get(methodEntry.getKey()).add(methodEntry.getValue());
                     //also don't forget to add this test cases partner from MCDCoverage list if its MCDC coverage
+                    if (testCasePartner != null){
+                        //then the test case partner is real so use testCasePartner as the key or get it as the partner
+                        // of the current testcase
+
+                        //find testCasePartner in MCDCoverage and add it as a test case where tsetCasePartner is the
+                        //conditionSequence key to MCDCoverage
+                    }
                 }
 
 
                 //evaluate whether the target coverage criteria have been reached for this method
                 //if so then somehow delete this methodEntry from the entrySet and carry on until all of them are met
-                //TODO to do this with branch coverage will need a HashMap from method to number of branches
-                // (somehow link with Instrument.addBranchLogger())
+                    //TODO to do this with branch coverage will need a HashMap from method to number of branches
+                    // (somehow link with Instrument.addBranchLogger())
+
+                    //TODO for MCDC this evaluation will be whether all the conditions for that class have a test case pair
+                    // where all other conditions are minor and stay the same and the major condition flips with the
+                    // predicate/branch
             }
         }
 
@@ -162,6 +189,133 @@ public class TestDataGenerator {
 
         System.out.println(testCases.toString());
 
+    }
+
+    /** isNewMCDCTestCase uses the MCDCoverage data structure to find if the new test case given the conditions and
+     *   branches it covered whether it should be added into the test suite
+     *
+     * @param methodInfo the current method under test including the parameters of the current input / potential test case
+     * @param coveredConditions hashmap of all covered conditions and their truth value
+     * @param coveredBranches integer set of all branches that were covered
+     * @return a Pair object where the left hand side is whether it was a success and the current is to be added as a test case
+     *          and the string is the conditionSequence of the partner to it in the MCDCoverage data structure
+     */
+    private Pair<Boolean,String> isNewMCDCTestCase(Map.Entry<String,List> methodInfo, HashMap<Integer,Boolean> coveredConditions, Set<Integer> coveredBranches){
+        //remember - HashMap<String,HashMap<String,Object>> MCDCoverage - more at top of class
+
+        //turn the results (coveredConditions and coveredBranches) into a strings that can be compared
+        String conditionSequence = coveredConditionsIntoConditionSequence(coveredConditions);
+        String branchSequence = coveredBranchesIntoBranchSequence(coveredBranches);
+        boolean success = false;
+        String partner = null;
+
+        //check if new test case's conditionSequence is already a key
+        if (!MCDCoverage.containsKey(conditionSequence)){
+
+            //make InMap true if its found as a partner at any time or put as a partner into the hashmap
+            boolean conditionSequenceInMap = false;
+
+            //TODO get where the different condition is so that if you find it to be a new pair test case that should be
+            // put in the test suite you can record which conditions are done
+
+            // iterate through all the records in MCDCoverage to check all the children and the hamming distance to those keys
+            for (Map.Entry<String,HashMap<String,Object>> MCDCRecord: MCDCoverage.entrySet()){
+                //check if its already in as a partner to this key if so break from the loop and nothing is added
+                if (MCDCRecord.getValue().containsKey(conditionSequence)){
+                    conditionSequenceInMap = true;
+                    break;
+                }
+                // check if the conditionSequence has a hamming distance of 1 to the current key (i.e. only 1 condition different)
+                // and their its branchSequences are different
+                if (hammingDist(conditionSequence,MCDCRecord.getKey())==1 &&
+                        MCDCRecord.getValue().get("branchSequence")!=branchSequence){
+                    //key will also be added if this is the first partner
+                    if (MCDCRecord.getValue().isEmpty()){
+                        partner = MCDCRecord.getKey();
+                    }
+                    //then add it to that key's hashmap as a partner and it'll be added as a test case
+                    HashMap<String,Object> contents = new HashMap<>();
+                    contents.put("parameters",methodInfo.getValue());
+                    contents.put("branchSequence",branchSequence);
+                    MCDCRecord.getValue().put(conditionSequence,contents);
+
+                    success = true;
+                    break;
+                }
+
+                //check if the conditionSequence has a hamming distance of 1 to any of this key's partners
+                for (Map.Entry<String,Object> partnerRecord: MCDCRecord.getValue().entrySet()){
+                    HashMap<String,Object> partnerMap = (HashMap)partnerRecord.getValue();
+                    if (hammingDist(conditionSequence,partnerRecord.getKey())==1 &&
+                            partnerMap.get("branchSequence")!=branchSequence){
+                        //TODO
+                        //make the partner the key in MCDCoverage and add the new test case to it as a partner
+
+                        //partner is not set because that test case is already in the test suite from being added before
+
+                        success = true;
+                        break;//TODO double break?
+                    }
+                }
+            }
+
+
+            // if no key is close make sure to check distance of all key partners as you go - if distance to any key is 1 + branchSequence different
+            //  then take the found partner and make it into a key, add new to it and make into a new test case but don't add the found partner as it'll already have one
+
+            // if not got a distance of 1 to any key in the current coverage add it as a new key
+            if (!conditionSequenceInMap){
+                success = true;
+                HashMap<String,Object> contents = new HashMap<>();
+                contents.put("parameters",methodInfo.getValue());
+                contents.put("branchSequence",branchSequence);
+                MCDCoverage.put(conditionSequence,contents);
+            }
+            //otherwise if you find the conditionSequence anywhere in the hashmap then just move on, nothing is added
+        }
+
+
+        return new Pair<>(success,partner);
+    }
+
+    private String coveredConditionsIntoConditionSequence(HashMap<Integer,Boolean> coveredConditions){
+        List<Integer> currentMethodsConditions = conditionRecords.get(currentMethod);
+        String conditionSequence = currentMethod;
+        //iterate through all the conditions for the current method
+        for (int i : currentMethodsConditions){
+            //add on the condition - if its present in coveredConditions check if true or not
+            // add 1 if true 0 if false
+            if (coveredConditions.containsKey(i)) {
+                if (coveredConditions.get(i)){
+                    conditionSequence += "1";
+                }
+                else {
+                    conditionSequence += "0";
+                }
+            }
+            //if absent then set as false
+            else {
+                conditionSequence += "0";
+            }
+        }
+        return conditionSequence;
+    }
+
+    private String coveredBranchesIntoBranchSequence(Set<Integer> coveredBranches){
+        List<Integer> currentMethodsBranches = branchRecords.get(currentMethod);
+        String branchSequence = "";
+        //iterate through all the branches for the current method
+        for (int i : currentMethodsBranches){
+            //add on the branch - if its present then set as 1 (i.e. the predicate was made true)
+            if (coveredBranches.contains(i)) {
+                branchSequence += "1";
+            }
+            //if absent then set as false
+            else {
+                branchSequence += "0";
+            }
+        }
+        return branchSequence;
     }
 
     private int generateInt(int i){
@@ -266,9 +420,12 @@ public class TestDataGenerator {
             System.out.println("* branch covered: " + id);
             coveredBranches.add(id);
         }
+        //add the branch to branchRecords if it doesn't already exist
+        //if (!branchRecords.containsKey(id)){
+
+        //}
     }
 
-//    @todo needed for MCDC - can we change Set<Integer> to HashMap<Integer,Boolean> so that we know if the loggedCondition was true or not
     public static boolean logCondition(int id, Boolean condition, HashMap<Integer,Boolean> coveredConditions ) {
 //        System.out.println(condition);
         boolean result = condition;
