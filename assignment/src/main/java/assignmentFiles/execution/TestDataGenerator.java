@@ -22,10 +22,10 @@ public class TestDataGenerator {
 
     private Random rand;
 
-    private HashMap<Integer,Boolean> coveredConditions;
-    //TODO make it so that in isNewMCDCTestCase this is filled out to True
-    // when that condition has a pair added for it, can use for evaluation of coverage because once all conditions have
-    // a pair coverage is 100% complete
+    //make it so that in isNewMCDCTestCase this is filled out to True when that condition has a pair added for it,
+    // can use for evaluation of coverage because once all conditions have a pair coverage is 100% complete
+    private HashMap<String, HashMap<Integer,Boolean>> methodConditionsWithPairs;
+    //TODO populate at the start somehow (from conditionRecords?)
 
     //MCDCoverage is a map from a conditionSequence (a string denoting the conditions truth values for an input)
     // - said input is given as {"parameters":xyz} in the hashmap the conditionSequence maps to
@@ -118,16 +118,14 @@ public class TestDataGenerator {
 
                 //evaluate whether these inputs are worth making into a test case
                 boolean success = false;
+                //MCDC
                 String testCasePartner = null;
                 if (coverageCriteria == "MCDC") {
                     //check coveredBranches against MCDCoverage list, non-appearing conditions are considered false
-                    //String[] results = isNewMCDCTestCase(methodEntry);
-                    //if (results[0]=="success"){
-                    //    success = true;
-                    //    if (results[1] != null){
-                    //        testCasePartner = results[1];
-                    //    }
-                    //}
+                    Pair<Boolean,String> results = isNewMCDCTestCase(methodEntry,coveredBranches, coveredConditions);
+                    if (results.getRight() != null){
+                        testCasePartner = results.getRight();
+                    }
 
                     //add everything to MCDCoverage but only add it to the testCases if a second pair is found for that major condition
                     //i.e. search through to find if
@@ -135,10 +133,9 @@ public class TestDataGenerator {
                     // 2. its got a partner test case that is
                     //      - this test case with 1 condition flipped and everything else the same
                     //      - any associated conditions are flipped too
-                    //      TODO perhaps you could be sure the condition-predicate linkage was confirmed if coveredBranch()
-                    //       went around the if statement and stored whether it was true or false like logCondition
                 }
-                //otherwise we check what branches are now covered (i.e. aren't in the definitiveCoveredBranches)
+                //Branch Coverage
+                //we check what branches are now covered (i.e. aren't in the definitiveCoveredBranches)
                 //and if new branches were found then add these inputs as a test case
                 else if (coverageCriteria == "branch") {
                     //remove all the old covered branches
@@ -200,7 +197,7 @@ public class TestDataGenerator {
      * @return a Pair object where the left hand side is whether it was a success and the current is to be added as a test case
      *          and the string is the conditionSequence of the partner to it in the MCDCoverage data structure
      */
-    private Pair<Boolean,String> isNewMCDCTestCase(Map.Entry<String,List> methodInfo, HashMap<Integer,Boolean> coveredConditions, Set<Integer> coveredBranches){
+    private Pair<Boolean,String> isNewMCDCTestCase(Map.Entry<String,List> methodInfo,Set<Integer> coveredBranches,HashMap<Integer,Boolean> coveredConditions){
         //remember - HashMap<String,HashMap<String,Object>> MCDCoverage - more at top of class
 
         //turn the results (coveredConditions and coveredBranches) into a strings that can be compared
@@ -208,6 +205,7 @@ public class TestDataGenerator {
         String branchSequence = coveredBranchesIntoBranchSequence(coveredBranches);
         boolean success = false;
         String partner = null;
+        int majorCondition = -1;
 
         //check if new test case's conditionSequence is already a key
         if (!MCDCoverage.containsKey(conditionSequence)){
@@ -215,9 +213,7 @@ public class TestDataGenerator {
             //make InMap true if its found as a partner at any time or put as a partner into the hashmap
             boolean conditionSequenceInMap = false;
 
-            //TODO get where the different condition is so that if you find it to be a new pair test case that should be
-            // put in the test suite you can record which conditions are done
-
+            outer:
             // iterate through all the records in MCDCoverage to check all the children and the hamming distance to those keys
             for (Map.Entry<String,HashMap<String,Object>> MCDCRecord: MCDCoverage.entrySet()){
                 //check if its already in as a partner to this key if so break from the loop and nothing is added
@@ -225,10 +221,14 @@ public class TestDataGenerator {
                     conditionSequenceInMap = true;
                     break;
                 }
-                // check if the conditionSequence has a hamming distance of 1 to the current key (i.e. only 1 condition different)
-                // and their its branchSequences are different
-                if (hammingDist(conditionSequence,MCDCRecord.getKey())==1 &&
-                        MCDCRecord.getValue().get("branchSequence")!=branchSequence){
+
+                //TODO split these next two sections into separate functions
+
+                // check if the conditionSequence has a hamming distance of 1 to the current key (i.e. only 1 condition different),
+                // their branchSequences are different and that major condition doesn't already have a pair
+                majorCondition = getIndexOfMajorCondition(conditionSequence,MCDCRecord.getKey());
+                if (!(majorCondition < 0) && MCDCRecord.getValue().get("branchSequence")!=branchSequence &&
+                        !majorConditionAlreadyCovered(majorCondition)){
                     //key will also be added if this is the first partner
                     if (MCDCRecord.getValue().isEmpty()){
                         partner = MCDCRecord.getKey();
@@ -246,26 +246,24 @@ public class TestDataGenerator {
                 //check if the conditionSequence has a hamming distance of 1 to any of this key's partners
                 for (Map.Entry<String,Object> partnerRecord: MCDCRecord.getValue().entrySet()){
                     HashMap<String,Object> partnerMap = (HashMap)partnerRecord.getValue();
-                    if (hammingDist(conditionSequence,partnerRecord.getKey())==1 &&
-                            partnerMap.get("branchSequence")!=branchSequence){
+                    majorCondition = getIndexOfMajorCondition(conditionSequence,partnerRecord.getKey());
+                    if (!(majorCondition < 0) && partnerMap.get("branchSequence")!=branchSequence &&
+                            !majorConditionAlreadyCovered(majorCondition)){
+                        conditionSequenceInMap = true;
                         //TODO
                         //make the partner the key in MCDCoverage and add the new test case to it as a partner
 
                         //partner is not set because that test case is already in the test suite from being added before
 
                         success = true;
-                        break;//TODO double break?
+                        break outer;//do a double break
                     }
                 }
             }
 
-
-            // if no key is close make sure to check distance of all key partners as you go - if distance to any key is 1 + branchSequence different
-            //  then take the found partner and make it into a key, add new to it and make into a new test case but don't add the found partner as it'll already have one
-
             // if not got a distance of 1 to any key in the current coverage add it as a new key
             if (!conditionSequenceInMap){
-                success = true;
+                //success is not set to true as it does not have a partner yet
                 HashMap<String,Object> contents = new HashMap<>();
                 contents.put("parameters",methodInfo.getValue());
                 contents.put("branchSequence",branchSequence);
@@ -274,8 +272,16 @@ public class TestDataGenerator {
             //otherwise if you find the conditionSequence anywhere in the hashmap then just move on, nothing is added
         }
 
+        //if success is true then we can fill in coveredConditions for this method and this majorCondition
+        if (success){
+            methodConditionsWithPairs.get(currentMethod).replace(majorCondition,true);
+        }
 
         return new Pair<>(success,partner);
+    }
+
+    private boolean majorConditionAlreadyCovered(int majorCondition){
+        return methodConditionsWithPairs.get(currentMethod).getOrDefault(majorCondition, true);
     }
 
     private String coveredConditionsIntoConditionSequence(HashMap<Integer,Boolean> coveredConditions){
@@ -446,5 +452,37 @@ public class TestDataGenerator {
             i++;
         }
         return count;
+    }
+
+    /** when passed two conditionSequences it will return the index at which the condition is flipped (i.e. the major
+     * condition), it will not count if the differing single flip is not a 1 or 0 as that means it is not a real
+     * test case pair and will return -1
+     *
+     * @param str1
+     * @param str2
+     * @return index of the major condition or -1 if hamming distance is greater than 1 or the 1 different character
+     *          is a letter rather than a 0 or 1
+     */
+    private int getIndexOfMajorCondition(String str1, String str2)
+    {
+        int i = 0, count = 0, index = -1;
+        while (i < str1.length())
+        {
+            if (str1.charAt(i) != str2.charAt(i)) {
+                count++;
+                index = i;
+            }
+            if (count > 1){
+                break;
+            }
+            i++;
+        }
+        if (count==1){
+            if (str1.charAt(index)=='0'||str1.charAt(index)=='1'||str2.charAt(index)=='0'||str2.charAt(index)=='1'){
+                //here we have a real condition pair so we get the index and we take away the length of the currentMethod
+                return index - currentMethod.length();
+            }
+        }
+        return -1;
     }
 }
