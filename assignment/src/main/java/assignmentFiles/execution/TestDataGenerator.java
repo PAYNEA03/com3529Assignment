@@ -157,11 +157,13 @@ public class TestDataGenerator {
                     testCases.get(methodEntry.getKey()).add(methodEntry.getValue());
                     //also don't forget to add this test cases partner from MCDCoverage list if its MCDC coverage
                     if (testCasePartner != null){
-                        //then the test case partner is real so use testCasePartner as the key or get it as the partner
+                        //then the test case partner is real so use testCasePartner as the key to get it as the partner
                         // of the current testcase
 
                         //find testCasePartner in MCDCoverage and add it as a test case where tsetCasePartner is the
                         //conditionSequence key to MCDCoverage
+                        HashMap<String,Object> partnerInfo = (HashMap)MCDCoverage.get(methodEntry.getKey()).get(testCasePartner);
+                        testCases.get(methodEntry.getKey()).add((List)partnerInfo.get("parameters"));
                     }
                 }
 
@@ -178,8 +180,13 @@ public class TestDataGenerator {
         }
 
         System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        System.out.println("Branch Coverage: " + definitiveCoveredBranches.size() + "/" + classMethods.branchTotal);
-        System.out.println("Covered Branch IDs: " + definitiveCoveredBranches);
+        if (coverageCriteria == "branch") {
+            System.out.println("Branch Coverage: " + definitiveCoveredBranches.size() + "/" + classMethods.branchTotal);
+            System.out.println("Covered Branch IDs: " + definitiveCoveredBranches);
+        }
+        else if (coverageCriteria == "MCDC"){
+            printMCDCoverage();
+        }
         System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
         System.out.println("");
@@ -222,7 +229,7 @@ public class TestDataGenerator {
                     break;
                 }
 
-                //TODO split these next two sections into separate functions
+                //TODO split these next two sections into separate functions?
 
                 // check if the conditionSequence has a hamming distance of 1 to the current key (i.e. only 1 condition different),
                 // their branchSequences are different and that major condition doesn't already have a pair
@@ -239,6 +246,7 @@ public class TestDataGenerator {
                     contents.put("branchSequence",branchSequence);
                     MCDCRecord.getValue().put(conditionSequence,contents);
 
+                    conditionSequenceInMap = true;
                     success = true;
                     break;
                 }
@@ -249,12 +257,19 @@ public class TestDataGenerator {
                     majorCondition = getIndexOfMajorCondition(conditionSequence,partnerRecord.getKey());
                     if (!(majorCondition < 0) && partnerMap.get("branchSequence")!=branchSequence &&
                             !majorConditionAlreadyCovered(majorCondition)){
-                        conditionSequenceInMap = true;
-                        //TODO
-                        //make the partner the key in MCDCoverage and add the new test case to it as a partner
+                        //make the found matching partner the key in MCDCoverage and add the new test case to it as a partner
+
+                        //if the partner record isn't already a key make it into one
+                        if (!MCDCoverage.containsKey(partnerRecord.getKey())){
+                            MCDCoverage.put(partnerRecord.getKey(),partnerMap);
+                        }
+
+                        //then add the current test case to it as a partner
+                        MCDCoverage.get(partnerRecord.getKey()).put(methodInfo.getKey(),methodInfo.getValue());
 
                         //partner is not set because that test case is already in the test suite from being added before
 
+                        conditionSequenceInMap = true;
                         success = true;
                         break outer;//do a double break
                     }
@@ -322,6 +337,26 @@ public class TestDataGenerator {
             }
         }
         return branchSequence;
+    }
+
+    private void printMCDCoverage(){
+        int totalCoverage = 0;
+        int totalConditions = 0;
+        for (Map.Entry<String,HashMap<Integer,Boolean>> method: methodConditionsWithPairs.entrySet()){
+            HashMap<Integer,Boolean> methodCoverage = method.getValue();
+            int thisMethodsConditions = conditionRecords.get(method.getKey()).size();
+            int thisMethodsCoverage = 0;
+            for (Map.Entry<Integer,Boolean> conditions:methodCoverage.entrySet()){
+                if (conditions.getValue()){
+                    thisMethodsCoverage++;
+                }
+            }
+            System.out.println("Method "+ method.getKey() +" has coverage of: " + thisMethodsCoverage + "/" + thisMethodsConditions);
+            System.out.println("");
+            totalCoverage += thisMethodsCoverage;
+            totalConditions += thisMethodsConditions;
+        }
+        System.out.println("Total class coverage of: " + totalCoverage + "/" + totalConditions);
     }
 
     private int generateInt(int i){
