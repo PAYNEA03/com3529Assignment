@@ -71,6 +71,8 @@ public class TestDataGenerator {
         Set<Integer> oldCoveredBranches = new TreeSet<>();
         Set<Integer> definitiveCoveredBranches = new TreeSet<>();
 
+
+
         //the test case output file
         //format MethodName - List of (each element is a test case) of Lists (each element is a parameter for that method)
         HashMap<String,List<List<Object>>> testCases = new HashMap<>();
@@ -150,10 +152,15 @@ public class TestDataGenerator {
 
                     }
                 }
-
                 //if the test case was a success add it to the testCases
                 if (success){
                     System.out.println("*** new test case: "+methodEntry.getValue().toString());
+//                    loop adds result to methodEntry to allow asserting in testcases
+                    for (Object t: methodEntry.getValue()
+                         ) {
+                        HashMap h = (HashMap) t;
+                        h.put("result",result);
+                    }
                     testCases.get(methodEntry.getKey()).add(methodEntry.getValue());
                     //also don't forget to add this test cases partner from MCDCoverage list if its MCDC coverage
                     if (testCasePartner != null){

@@ -2,6 +2,7 @@ package assignmentFiles.execution;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
+import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
@@ -11,6 +12,7 @@ import com.github.javaparser.ast.stmt.*;
 import com.github.javaparser.ast.visitor.VoidVisitor;
 import com.github.javaparser.ast.visitor.VoidVisitorAdapter;
 
+import javax.swing.plaf.nimbus.State;
 import java.util.*;
 
 
@@ -20,7 +22,11 @@ public class Instrument {
     private static int conditionCount = 0;
     private static HashMap<Integer, Expression> ifStmtLogs = new HashMap<>();
     private static List<String> classNames = new ArrayList<>();
+    public static HashMap<String, HashMap<Integer,Boolean>> methodConditions = new HashMap<>();
+    public static HashMap<String, HashMap<Integer,Boolean>> methodBranches = new HashMap<>();
 
+    private HashMap<String, HashMap<Integer, Boolean>> methodConditionsWithPairs;
+    public HashMap<String, HashMap<Integer,Boolean>> methodBranchBooleans;
     public int branchTotal;
     public int conditionTotal;
     public String path;
@@ -42,6 +48,8 @@ public class Instrument {
         this.ifStmts = ifStmtLogs;
         this.branchTotal = branchCount;
         this.conditionTotal = conditionCount;
+        this.methodConditionsWithPairs = methodConditions;
+        this.methodBranchBooleans = methodBranches;
     }
 
 
@@ -212,18 +220,69 @@ public class Instrument {
 
     }
 
-    private static String addBranchLogger() {
+    private static String addBranchLogger(Statement stmt) {
         ++branchCount;
         String branch = "TestDataGenerator.coveredBranch(" + branchCount + ", coveredBranches)";
+
+        String methodName = traverseMethod(stmt);
+
+        HashMap populate = methodBranches.get(methodName);
+
+        System.out.println(methodName);
+
+
+        HashMap<Integer,Boolean> h = new HashMap<>();
+
+        for (Object i : populate.keySet()) {
+            h.put((Integer) i,false);
+        }
+        h.put(branchCount,false);
+
+        methodBranches.put(methodName,h);
+
 
         return branch;
     }
 
+    private static String traverseMethod(Node stmt) {
+        String metName = "";
+
+        if (stmt.getParentNode().get().getClass().getSimpleName().equals("MethodDeclaration")) {
+            MethodDeclaration m = (MethodDeclaration) stmt.getParentNode().get();
+            metName = m.getNameAsString();
+            return metName;
+        } else {
+            metName = traverseMethod(stmt.getParentNode().get());
+        }
+
+        return metName;
+    }
+
     private static NameExpr addConditionLogger(Expression stmt) {
-        conditionCount++;
-        ifStmtLogs.put(conditionCount,stmt);
-        String condition = "TestDataGenerator.logCondition(" + conditionCount + ", " + stmt + ", coveredConditions)";
-        NameExpr newCondition = new NameExpr(condition);
+
+        NameExpr newCondition = new NameExpr();
+
+        if (!stmt.getParentNode().isEmpty()) {
+            conditionCount++;
+            ifStmtLogs.put(conditionCount,stmt);
+
+            String methodName = traverseMethod(stmt);
+
+            HashMap populate = methodConditions.get(methodName);
+
+            HashMap<Integer,Boolean> h = new HashMap<>();
+
+            for (Object i : populate.keySet()) {
+                h.put((Integer) i,false);
+            }
+            h.put(conditionCount,false);
+
+            methodConditions.put(methodName,h);
+
+
+            String condition = "TestDataGenerator.logCondition(" + conditionCount + ", " + stmt + ", coveredConditions)";
+            newCondition = new NameExpr(condition);
+        }
 
         return newCondition;
     }
@@ -302,6 +361,15 @@ public class Instrument {
             VoidVisitor<List<String>> methodNameCollector = new MethodNameCollector();
             methodNameCollector.visit(md.findCompilationUnit().get(),methodNames);
 
+            HashMap<Integer, Boolean> setup = new HashMap();
+//            create methodConditons used in testDataGenerator
+            for (String name:methodNames) {
+                methodConditions.put(name,setup);
+                methodBranches.put(name,setup);
+            }
+
+
+
 //            all parameters found in method
             List<Parameter> methodParameters = md.getParameters();
 
@@ -348,7 +416,7 @@ public class Instrument {
         public void visit(WhileStmt md, Void args) {
             super.visit(md, args);
 
-            md.getBody().asBlockStmt().addStatement(0, new NameExpr(addBranchLogger()));
+            md.getBody().asBlockStmt().addStatement(0, new NameExpr(addBranchLogger(md)));
 
             if( md.getCondition().isBinaryExpr()) {
                 recursiveConditionParser(md.getCondition().asBinaryExpr());
@@ -374,7 +442,7 @@ public class Instrument {
         }
 
         private static void parseIfStmt(IfStmt n) {
-            n.getThenStmt().asBlockStmt().addStatement(0, new NameExpr(addBranchLogger()));
+            n.getThenStmt().asBlockStmt().addStatement(0, new NameExpr(addBranchLogger(n)));
 
             if( n.getCondition().isBinaryExpr()) {
                 recursiveConditionParser(n.getCondition().asBinaryExpr());
@@ -384,7 +452,7 @@ public class Instrument {
         }
 
         private static void parseElse(Statement n) {
-            n.asBlockStmt().addStatement(0, new NameExpr(addBranchLogger()));
+            n.asBlockStmt().addStatement(0, new NameExpr(addBranchLogger(n)));
         }
 
 

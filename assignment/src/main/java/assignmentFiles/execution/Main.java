@@ -23,17 +23,29 @@ public class Main {
         // args[1] - type of search
         // args[2] - will presumably be the java file they want to instrument
 
-        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[1]));
+        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[2]));
 
         Instrument classMethods = Instrument.parseClass(cu);
 
-//        @todo 4.2: generate test requirements (branch coverage/MCDC)
+//        @todo as requested, the following booleans with ids to the method
+//          also previously implemented, if stmts with the condition and id.
+//          object saved in javaparser format, can use getLeft, getRight, getOperator
+//          to get details - could be helpful for mcdc/condition coverage?
+//        if statements contains all ids, plus the condition for that id
+        System.out.println(classMethods.ifStmts);
+//        LISTS ids for conditions associated with method
+        System.out.println(classMethods.methodConditions);
+//        lists ids for branches associated with method
+        System.out.println(classMethods.methodBranchBooleans);
 
         String coverage = "branch"; // args[0];
         String search = "random"; // args[1]
 
-        TestDataGenerator generator = new TestDataGenerator(coverage,search);
-        generator.testGeneration(classMethods);
+//        TestDataGenerator generator = new TestDataGenerator(coverage,search);
+//        generator.testGeneration(classMethods);
+
+
+
 //        TestDataGenerator.searchBasedGeneration(classMethods);
 
 
