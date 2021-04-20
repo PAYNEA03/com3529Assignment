@@ -1,5 +1,6 @@
 package assignmentFiles.execution;
 
+import assignmentFiles.utils.Pair;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
@@ -22,11 +23,11 @@ public class Instrument {
     private static int conditionCount = 0;
     private static HashMap<Integer, Expression> ifStmtLogs = new HashMap<>();
     private static List<String> classNames = new ArrayList<>();
-    public static HashMap<String, HashMap<Integer,Boolean>> methodConditions = new HashMap<>();
-    public static HashMap<String, HashMap<Integer,Boolean>> methodBranches = new HashMap<>();
+    public static HashMap<String, HashMap<Integer,Pair<Boolean, Boolean>>> methodConditions = new HashMap<>();
+    public static HashMap<String, HashMap<Integer,Pair<Boolean, Boolean>>> methodBranches = new HashMap<>();
 
-    private HashMap<String, HashMap<Integer, Boolean>> methodConditionsWithPairs;
-    public HashMap<String, HashMap<Integer,Boolean>> methodBranchBooleans;
+    private HashMap<String, HashMap<Integer, Pair<Boolean, Boolean>>> methodConditionsWithPairs;
+    public HashMap<String, HashMap<Integer,Pair<Boolean, Boolean>>> methodBranchBooleans;
     public int branchTotal;
     public int conditionTotal;
     public String path;
@@ -231,12 +232,12 @@ public class Instrument {
         System.out.println(methodName);
 
 
-        HashMap<Integer,Boolean> h = new HashMap<>();
+        HashMap<Integer,Pair<Boolean, Boolean>> h = new HashMap<>();
 
         for (Object i : populate.keySet()) {
-            h.put((Integer) i,false);
+            h.put((Integer) i,new Pair<>(false,false));
         }
-        h.put(branchCount,false);
+        h.put(branchCount,new Pair<>(false,false));
 
         methodBranches.put(methodName,h);
 
@@ -270,12 +271,12 @@ public class Instrument {
 
             HashMap populate = methodConditions.get(methodName);
 
-            HashMap<Integer,Boolean> h = new HashMap<>();
+            HashMap<Integer,Pair<Boolean, Boolean>> h = new HashMap<>();
 
             for (Object i : populate.keySet()) {
-                h.put((Integer) i,false);
+                h.put((Integer) i, new Pair<>(false,false));
             }
-            h.put(conditionCount,false);
+            h.put(conditionCount,new Pair<>(false,false));
 
             methodConditions.put(methodName,h);
 
@@ -361,7 +362,7 @@ public class Instrument {
             VoidVisitor<List<String>> methodNameCollector = new MethodNameCollector();
             methodNameCollector.visit(md.findCompilationUnit().get(),methodNames);
 
-            HashMap<Integer, Boolean> setup = new HashMap();
+            HashMap<Integer, Pair<Boolean, Boolean>> setup = new HashMap();
 //            create methodConditons used in testDataGenerator
             for (String name:methodNames) {
                 methodConditions.put(name,setup);
