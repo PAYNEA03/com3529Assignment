@@ -2,8 +2,8 @@ package assignmentFiles.utils;
 
 public class Pair<L,R> {
 
-    private final L left;
-    private final R right;
+    private L left;
+    private R right;
 
     public Pair(L left, R right) {
         assert left != null;
@@ -15,6 +15,8 @@ public class Pair<L,R> {
 
     public L getLeft() { return left; }
     public R getRight() { return right; }
+    public void setLeft(L input) { left = input; }
+    public void setRight(R rinput) { right = rinput; }
 
     @Override
     public int hashCode() { return left.hashCode() ^ right.hashCode(); }
