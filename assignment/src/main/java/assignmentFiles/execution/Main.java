@@ -5,7 +5,8 @@ import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 
 import java.io.File;
-
+import java.util.HashMap;
+import java.util.List;
 
 
 public class Main {
@@ -23,7 +24,7 @@ public class Main {
         // args[1] - type of search
         // args[2] - will be the java file the user wants to instrument
 
-        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[2]));
+        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[1]));
 
         Instrument classMethods = Instrument.parseClass(cu);
 
@@ -31,18 +32,7 @@ public class Main {
         String search =  args[1];
 
         TestDataGenerator generator = new TestDataGenerator(coverage,search, classMethods.methodConditions, classMethods.methodBranchBooleans);
-        generator.testGeneration(classMethods);
-
-
-
-//        TestDataGenerator.searchBasedGeneration(classMethods);
-
-
-//        @todo 4.4 generate test data.
-
-
-
-
+        HashMap<String,List<List<Object>>> testCases = generator.testGeneration(classMethods);
 
     }
 
