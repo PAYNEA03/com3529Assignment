@@ -25,7 +25,7 @@ public class TestDataGenerator {
     //make it so that in isNewMCDCTestCase this is filled out to True when that condition has a pair added for it,
     // can use for evaluation of coverage because once all conditions have a pair coverage is 100% complete
     private HashMap<String, HashMap<Integer,Boolean>> methodConditionsWithPairs;
-    //TODO populate at the start somehow (from conditionRecords?)
+
     //left true right false
     private HashMap<String, HashMap<Integer,Boolean>> methodBranchesCovered;
     private HashMap<String, HashMap<Integer,Pair<Boolean,Boolean>>> methodConditionsCovered;
@@ -35,7 +35,7 @@ public class TestDataGenerator {
     // - the inputs has a corresponding branchSequence as a string and is given in the hashMap as {"branchSequence":xyz}
     // - other inputs that have different yet matching conditionSequences (hamming distance of 1, 1 element different) are also in the hashmap
     //    these other inputs also map to a hashmap with "parameters":xyz and "branchSequence":xyz
-    private HashMap<String,HashMap<String,Object>> MCDCoverage;
+    private HashMap<String,HashMap<String,Object>> MCDCoverage = new HashMap<>();
 
     //use currentMethod to know which one is currently being tested so that when logConditions and coveredBranch is called
     //we can store the name of the method that it resides in
@@ -48,31 +48,34 @@ public class TestDataGenerator {
 
     private List<Object> nextParameterSet;
 
-    public TestDataGenerator(String cc,String gt, HashMap<String, HashMap<Integer,Boolean>> methodConditionsWithPairs,
-                             HashMap<String,List<Integer>> conditionRecords, HashMap<String,List<Integer>> branchRecords){
+    public TestDataGenerator(String cc,String gt,  HashMap<String, HashMap<Integer, Pair<Boolean, Boolean>>> methodConditions,
+                             HashMap<String, HashMap<Integer, Pair<Boolean, Boolean>>> methodBranches){
         coverageCriteria = cc;
         generationType = gt;
 
-        this.methodConditionsWithPairs = methodConditionsWithPairs;
-        this.conditionRecords = conditionRecords;
-        this.branchRecords = branchRecords;
+        //create conditionRecords and branchRecords from methodConditions and methodBranches
 
-        if (generationType == "search"){
+        this.conditionRecords = toRecords(methodConditions);
+        this.branchRecords = toRecords(methodBranches);
+
+        if (generationType.equals("search")){
             //
         }
         else {
             rand = new Random();
         }
-        if (coverageCriteria == "MCDC"){
-            //set up MCDC list of pairs of boolean lists,
-            // elements of the greater list is a pair of correlated MCDC conditions with matching major and minor conditions
-            // where the major term decides the predicate of a branch (can be any branch as every other minor condition is
-            // the same)
-            MCDCoverage = new HashMap<>();
-            //every index is a different coverage pair
-            //every index in the pair lists is the condition id
+        if (coverageCriteria.equals("MCDC")){
+
+            //populate methodConditionsWithPairs for tracking coverage
+            methodConditionsWithPairs = new HashMap<>();
+            for (Map.Entry<String,List<Integer>> methodCons : conditionRecords.entrySet()){
+                methodConditionsWithPairs.put(methodCons.getKey(), new HashMap<>());
+                for (int conditionId : methodCons.getValue()){
+                    methodConditionsWithPairs.get(methodCons.getKey()).put(conditionId,false);
+                }
+            }
         }
-        else if (coverageCriteria == "MCC"){
+        else if (coverageCriteria.equals("condition")){
             //populate methodConditionsCovered for tracking coverage
             methodConditionsCovered = new HashMap<>();
             for (Map.Entry<String,List<Integer>> methodCons : conditionRecords.entrySet()){
@@ -82,7 +85,7 @@ public class TestDataGenerator {
                 }
             }
         }
-        else if (coverageCriteria == "branch"){
+        else if (coverageCriteria.equals("branch")){
             //populate methodBranchesCovered for tracking coverage
             methodBranchesCovered = new HashMap<>();
             for (Map.Entry<String,List<Integer>> methodBrans : branchRecords.entrySet()){
@@ -109,11 +112,18 @@ public class TestDataGenerator {
             testCases.put(classMethod,new ArrayList<>());
         }
 
+        HashMap<String, List> methodDetailsX = classMethods.methodDetails;
+
         for (int i=0; i < ITERATIONS; i ++) {
 
+            //removedMethods is the keys of any methods that have reached maximum coverage for the given criteria
+            Set<String> removedMethods = new TreeSet<>();
             // iterate through all the class methods
-            for (Map.Entry<String,List> methodEntry: classMethods.methodDetails.entrySet()) {
+            for (Map.Entry<String,List> methodEntry: methodDetailsX.entrySet()) {
+                //get the current method
                 currentMethod = methodEntry.getKey();
+
+                /**GENERATE THE TEST CASE INPUTS**/
                 //if its a search based technique calculate the next set of parameters in the search for every method
                 if (generationType == "search"){
                     generateInputsBySearch();
@@ -149,71 +159,38 @@ public class TestDataGenerator {
 
                 //evaluate whether these inputs are worth making into a test case
                 boolean success = false;
-                //MCDC
+                //for MCDC
                 String testCasePartner = null;
-                //TODO switch cases for these sorts of things?
-                if (coverageCriteria == "MCDC") {
+
+                /**COVERAGE CHECKING**/ //- are these inputs worth making a test case out of?
+                switch (coverageCriteria) {
+                case "MCDC":
                     //check coveredBranches against MCDCoverage list, non-appearing conditions are considered false
                     Pair<Boolean,String> results = isNewMCDCTestCase(methodEntry,coveredBranches, coveredConditions);
                     if (results.getRight() != null){
                         testCasePartner = results.getRight();
                     }
+                    break;
 
-                    //add everything to MCDCoverage but only add it to the testCases if a second pair is found for that major condition
-                    //i.e. search through to find if
-                    // 1. a set of inputs for this method that got this conditionSequence is already in the MCDCoverage
-                    // 2. its got a partner test case that is
-                    //      - this test case with 1 condition flipped and everything else the same
-                    //      - any associated conditions are flipped too
-                    //      - that major condition for that method is not covered yet
-                }
                 //Branch Coverage
                 //we check what branches are now covered (i.e. aren't in the definitiveCoveredBranches)
                 //and if new branches were found then add these inputs as a test case
-                else if (coverageCriteria == "branch") {
-                    //remove all the old covered branches
-                    coveredBranches.removeAll(definitiveCoveredBranches);
-                    //if theres any left then there was newly covered branches
-                    if (coveredBranches.size() > 0){
-                        success = true;
-                        for (int newBranch : coveredBranches){
-                            System.out.println(" ** new branch covered: "+newBranch);
-                            definitiveCoveredBranches.add(newBranch);
-                            methodBranchesCovered.get(currentMethod).replace(newBranch,true);
-                        }
+                case "branch":
+                    success = isNewBranchTestCase(coveredBranches, definitiveCoveredBranches);
+                    break;
 
-                    }
-                }
                 //Condition Coverage
                 //we check what conditions have had which truth values assigned  (i.e. aren't in the definitiveCoveredConditions)
                 //and if new conditions were found then add these inputs as a test case
-                else if (coverageCriteria == "MCC") {
-                    HashMap<Integer,Pair<Boolean,Boolean>> currentMethodCoverage = methodConditionsCovered.get(currentMethod);
-                    //iterate through coveredConditions and check if methodConditionWithPairs has true
-                    for (Map.Entry<Integer,Boolean> justCovered : coveredConditions.entrySet()){
-                        //check if the condition being true (currentMethodCoverage's left boolean) hasn't been covered already
-                        if (!currentMethodCoverage.get(justCovered.getKey()).getLeft() &&
-                                justCovered.getValue()){
-                            success = true;
-                            methodConditionsCovered.get(currentMethod).get(justCovered.getKey()).setLeft(true);
-                            System.out.println(" ** new condition covered as "+ justCovered.getValue()+": "+justCovered.getKey());
-                        }
-                        //check if the condition being false (currentMethodCoverage's right boolean) hasn't been covered already
-                        else if (!currentMethodCoverage.get(justCovered.getKey()).getRight() &&
-                                !justCovered.getValue()){
-                            //so if not covered and this test case makes the condition false then add these inputs as a test case
-                            success = true;
-                            methodConditionsCovered.get(currentMethod).get(justCovered.getKey()).setLeft(true);
-                            System.out.println(" ** new condition covered as "+ justCovered.getValue()+": "+justCovered.getKey());
-                        }
-                    }
+                case "condition":
+                    success = isNewConditionTestCase(coveredConditions);
                 }
+
                 //if the test case was a success add it to the testCases
                 if (success){
                     System.out.println("*** new test case: "+methodEntry.getValue().toString());
 //                    loop adds result to methodEntry to allow asserting in testcases
-                    for (Object t: methodEntry.getValue()
-                         ) {
+                    for (Object t: methodEntry.getValue()) {
                         HashMap h = (HashMap) t;
                         h.put("result",result);
                     }
@@ -230,37 +207,90 @@ public class TestDataGenerator {
                     }
                 }
 
-
+                /**COVERAGE EVALUATION**/
                 //evaluate whether the target coverage criteria have been reached for this method
-                //if so then somehow delete this methodEntry from the entrySet and carry on until all of them are met
-                    //TODO to do this with branch coverage - has this method got any more branches in methodBranchesCovered
-                    // that aren't true, if no then remove from entryset
-
-                    //TODO to do this with mcc - has this method got any more conditions in methodConditionsCovered
-                    // that aren't both true (i.e. has been evaluated to true and false in each)
-
-                    //TODO for MCDC this evaluation will be whether all the conditions for that class have a test case pair
+                boolean completelyCovered = true;
+                switch (coverageCriteria) {
+                    //MCDC
+                    //this evaluation will be whether all the conditions for that class have a test case pair
                     // where all other conditions are minor and stay the same and the major condition flips with the
                     // predicate/branch
+                    case "MCDC":
+                        for (Map.Entry<Integer,Boolean> coverage : methodConditionsWithPairs.get(currentMethod).entrySet()){
+                            if (!coverage.getValue()){
+                                completelyCovered = false;
+                                break;
+                            }
+                        }
+                        break;
+
+                    //Branch Coverage
+                    //has this method got any more branches in methodBranchesCovered that aren't true/covered
+                    case "branch":
+                        for (Map.Entry<Integer,Boolean> coverage : methodBranchesCovered.get(currentMethod).entrySet()){
+                            if (!coverage.getValue()){
+                                completelyCovered = false;
+                                break;
+                            }
+                        }
+                        break;
+
+                    //Condition Coverage
+                    //has this method got any more conditions in methodConditionsCovered that aren't both true
+                    // (i.e. has been evaluated to true and false in each)
+                    case "condition":
+                        for (Map.Entry<Integer,Pair<Boolean,Boolean>> coverage : methodConditionsCovered.get(currentMethod).entrySet()){
+                            //check that left or right is not false (i.e. that true and false for that condition are covered)
+                            if (!coverage.getValue().getLeft()||!coverage.getValue().getRight()){
+                                completelyCovered = false;
+                                break;
+                            }
+                        }
+                        break;
+                }
+                //if its deemed that the current method is now fully covered add its name to removedMethods
+                if (completelyCovered){
+                    System.out.println(currentMethod+" has 100% coverage");
+                    System.out.println(methodDetailsX.size()-1+" methods left to cover");
+                    removedMethods.add(currentMethod);
+                }
+            }
+            //before the next iteration begins - remove all methods in removedMethods from classMethods.methodDetails - i.e. are fully covered
+            // so that they aren't in methodDetailsX and have any check next iteration
+            for (String removedMethod : removedMethods) {
+                methodDetailsX.remove(removedMethod);
+            }
+
+            //if no more methods then break the iterations
+            if (methodDetailsX.size()<1){
+                break;
             }
         }
 
+        /* TEST GENERATION RESULTS SUMMARY **/
         System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-        if (coverageCriteria == "branch") {
-            System.out.println("Branch Coverage: " + definitiveCoveredBranches.size() + "/" + classMethods.branchTotal);
-            System.out.println("Covered Branch IDs: " + definitiveCoveredBranches);
-        }
-        else if (coverageCriteria == "MCDC"){
-            printMCDCoverage();
+        switch (coverageCriteria) {
+            case "branch":
+                System.out.println("Branch Coverage: " + definitiveCoveredBranches.size() + "/" + classMethods.branchTotal);
+                System.out.println("Covered Branch IDs: " + definitiveCoveredBranches);
+                break;
+            case "condition":
+                System.out.println("Condition Coverage: " + getFinalConditionCoverage() + "/" + 2 * classMethods.conditionTotal);
+                break;
+            case "MCDC":
+                printMCDCoverage();
+                break;
         }
         System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
-        System.out.println("");
+        System.out.println();
 
         System.out.println(testCases.toString());
 
     }
 
+
+    /* ****** MCDC *******/
     /** isNewMCDCTestCase uses the MCDCoverage data structure to find if the new test case given the conditions and
      *   branches it covered whether it should be added into the test suite
      *
@@ -361,6 +391,12 @@ public class TestDataGenerator {
         return new Pair<>(success,partner);
     }
 
+    /** majorConditionAlreadyCovered returns true if said condition in said method has been covered yet or if that method
+     *  doesn't have that condition, otherwise it returns false
+     *
+     * @param majorCondition the id of the current condtion thats been covered
+     * @return has it been covered already in another test case?
+     */
     private boolean majorConditionAlreadyCovered(int majorCondition){
         return methodConditionsWithPairs.get(currentMethod).getOrDefault(majorCondition, true);
     }
@@ -425,6 +461,67 @@ public class TestDataGenerator {
         System.out.println("Total class coverage of: " + totalCoverage + "/" + totalConditions);
     }
 
+    /******* BRANCH *******/
+    private boolean isNewBranchTestCase(Set<Integer> coveredBranches, Set<Integer> definitiveCoveredBranches){
+        boolean success = false;
+        //remove all the old covered branches
+        coveredBranches.removeAll(definitiveCoveredBranches);
+        //if theres any left then there was newly covered branches
+        if (coveredBranches.size() > 0){
+            success = true;
+            for (int newBranch : coveredBranches){
+                System.out.println(" ** new branch covered: "+newBranch);
+                definitiveCoveredBranches.add(newBranch);
+                methodBranchesCovered.get(currentMethod).replace(newBranch,true);
+            }
+        }
+        return success;
+    }
+
+    /******* CONDITIONCOVERAGE *******/
+    private boolean isNewConditionTestCase(HashMap<Integer,Boolean> coveredConditions){
+        boolean success = false;
+        HashMap<Integer,Pair<Boolean,Boolean>> currentMethodCoverage = methodConditionsCovered.get(currentMethod);
+        //iterate through coveredConditions and check if methodConditionWithPairs has true
+        for (Map.Entry<Integer,Boolean> justCovered : coveredConditions.entrySet()){
+            //check if the condition being true (currentMethodCoverage's left boolean) hasn't been covered already
+            if (!currentMethodCoverage.get(justCovered.getKey()).getLeft() &&
+                    justCovered.getValue()){
+                success = true;
+                methodConditionsCovered.get(currentMethod).get(justCovered.getKey()).setLeft(true);
+                System.out.println(" ** new condition covered as "+ justCovered.getValue()+": "+justCovered.getKey());
+            }
+            //check if the condition being false (currentMethodCoverage's right boolean) hasn't been covered already
+            else if (!currentMethodCoverage.get(justCovered.getKey()).getRight() &&
+                    !justCovered.getValue()){
+                //so if not covered and this test case makes the condition false then add these inputs as a test case
+                success = true;
+                methodConditionsCovered.get(currentMethod).get(justCovered.getKey()).setLeft(true);
+                System.out.println(" ** new condition covered as "+ justCovered.getValue()+": "+justCovered.getKey());
+            }
+        }
+        return success;
+    }
+
+    private int getFinalConditionCoverage(){
+        //conditions the number of covered condition truth values successfully covered
+        int conditionsCovered = 0;
+        //iterate through all the methods and all the conditions and get a total number of covered condition polarities
+        for (Map.Entry<String, HashMap<Integer,Pair<Boolean,Boolean>>> coverage : methodConditionsCovered.entrySet()){
+            for (Map.Entry<Integer,Pair<Boolean,Boolean>> methodCoverage : coverage.getValue().entrySet()){
+                if (methodCoverage.getValue().getLeft()){
+                    conditionsCovered++;
+                }
+                if (methodCoverage.getValue().getRight()){
+                    conditionsCovered++;
+                }
+            }
+        }
+        return conditionsCovered;
+    }
+
+
+    /**TEST DATA GENERATION*/
     private int generateInt(int i){
         if (generationType == "search"){
             return (int)nextParameterSet.get(i);
@@ -585,5 +682,15 @@ public class TestDataGenerator {
             }
         }
         return -1;
+    }
+
+    private HashMap<String,List<Integer>> toRecords(HashMap<String, HashMap<Integer, Pair<Boolean, Boolean>>> methods){
+        HashMap<String,List<Integer>> output = new HashMap<>();
+        for (Map.Entry<String,HashMap<Integer,Pair<Boolean,Boolean>>> mC : methods.entrySet()){
+            List<Integer> ids = new ArrayList<>(mC.getValue().keySet());
+            Collections.sort(ids);
+            output.put(mC.getKey(),ids);
+        }
+        return output;
     }
 }

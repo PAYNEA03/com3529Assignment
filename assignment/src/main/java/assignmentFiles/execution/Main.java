@@ -21,28 +21,17 @@ public class Main {
     public static void main(String[] args) throws Exception {
         // args[0] - coverage criteria out of branch and MCDC
         // args[1] - type of search
-        // args[2] - will presumably be the java file they want to instrument
+        // args[2] - will be the java file the user wants to instrument
 
         CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[2]));
 
         Instrument classMethods = Instrument.parseClass(cu);
 
-//        @todo as requested, the following booleans with ids to the method
-//          also previously implemented, if stmts with the condition and id.
-//          object saved in javaparser format, can use getLeft, getRight, getOperator
-//          to get details - could be helpful for mcdc/condition coverage?
-//        if statements contains all ids, plus the condition for that id
-        System.out.println(classMethods.ifStmts);
-//        LISTS ids for conditions associated with method
-        System.out.println(classMethods.methodConditions);
-//        lists ids for branches associated with method
-        System.out.println(classMethods.methodBranchBooleans);
+        String coverage = args[0];
+        String search =  args[1];
 
-        String coverage = "branch"; // args[0];
-        String search = "random"; // args[1]
-
-//        TestDataGenerator generator = new TestDataGenerator(coverage,search);
-//        generator.testGeneration(classMethods);
+        TestDataGenerator generator = new TestDataGenerator(coverage,search, classMethods.methodConditions, classMethods.methodBranchBooleans);
+        generator.testGeneration(classMethods);
 
 
 
