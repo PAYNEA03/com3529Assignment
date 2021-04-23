@@ -31,7 +31,7 @@ public class Main {
         // args[7] - max_str_len = maximum length of strings generated in string generation
         // args[8] - alphanumeric = boolean true if strings generated should be alphanumeric else alphabetic only
 
-        CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[1]));
+        CompilationUnit cu = StaticJavaParser.parse(new File(args[1]));
 
 
         Instrument classMethods = Instrument.parseClass(cu);

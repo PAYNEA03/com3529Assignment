@@ -14,8 +14,10 @@ following features have been implemented in this submission:
 
 * Parse Java file  automatically to obtain a list of methods and their parameters
 * Parse Java file automatically to obtain a list of if branches and their conditions
-* Generate values for meeting Restricted MCDC Coverage Criterion.
-* Generate test cases automatically and parse to a java test file
+* Generate test case suites in terms of meeting Restricted MCDC Coverage Criterion
+* Generate test case suites in terms of meeting Branch Coverage Criterion
+* Generate test case suites in terms of meeting Condition Coverage Criterion
+* Generate J-Unit test cases automatically and parse to a java test file
 
 
 ## Technologies
@@ -24,5 +26,23 @@ following features have been implemented in this submission:
 
 
 ## Launch/Setup
+
+1. Place files you want to test inside the src directory somewhere, we recommend src/main/java/assignmentFiles/subjectFiles/ but anywhere will do
+2. Run Main.java with the following command line arguments:
+	- argument 1 - coverage criteria out of branch, condition and MCDC
+	- argument 2 - will be the path to the java file the user wants to instrument from src onwards e.g. src/main/java/assignmentFiles/subjectFiles/Triangle.java
+	
+	- **IF THE USER WANTS TO CONFIGURE INPUT PARAMETERS THEN ADD THE FOLLOWING ADDITIONAL ARGUMENTS:**
+        - argument 3 - min_doub = minimum value for double generation
+        - argument 4 - max_doub = maximum value for double generation
+        - argument 5 - min_int = minimum value for integer generation
+        - argument 6 - max_int = maximum value for integer generation
+        - argument 7 - min_str_len = minimum length of strings generated in string generation
+        - argument 8 - max_str_len = maximum length of strings generated in string generation
+        - argument 9 - alphanumeric = boolean true if strings generated should be alphanumeric else alphabetic only
+3. The J-Unit test cases will then be put inside of BLANK with their respective outputs. It is up to you, the user, to decide whether the outputs are correct and change them accordingly.
+
+## Additional Complexities
+
 
 ## Limitations
