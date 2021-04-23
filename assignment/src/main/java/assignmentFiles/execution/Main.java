@@ -21,17 +21,32 @@ public class Main {
 
     public static void main(String[] args) throws Exception {
         // args[0] - coverage criteria out of branch and MCDC
-        // args[1] - type of search
-        // args[2] - will be the java file the user wants to instrument
+        // args[1] - will be the java file the user wants to instrument
+        // IF THE USER WANTS TO CONFIGURE INPUT PARAMETERS THEN ADD ADDITIONAL args[3+]
+        // args[2] - min_doub = minimum value for double generation
+        // args[3] - max_doub = maximum value for double generation
+        // args[4] - min_int = minimum value for integer generation
+        // args[5] - max_int = maximum value for integer generation
+        // args[6] - min_str_len = minimum length of strings generated in string generation
+        // args[7] - max_str_len = maximum length of strings generated in string generation
+        // args[8] - alphanumeric = boolean true if strings generated should be alphanumeric else alphabetic only
 
         CompilationUnit cu = StaticJavaParser.parse(new File(FILE_PATH[1]));
+
 
         Instrument classMethods = Instrument.parseClass(cu);
 
         String coverage = args[0];
-        String search =  args[1];
 
-        TestDataGenerator generator = new TestDataGenerator(coverage,search, classMethods.methodConditions, classMethods.methodBranchBooleans);
+        TestDataGenerator generator;
+        if (args.length == 9){
+            generator = new TestDataGenerator(cu, coverage, classMethods.methodConditions, classMethods.methodBranchBooleans,
+                    Double.parseDouble(args[2]), Double.parseDouble(args[3]), Integer.parseInt(args[4]), Integer.parseInt(args[5]),
+                    Integer.parseInt(args[6]), Integer.parseInt(args[7]), Boolean.getBoolean(args[8]));
+        }
+        else {
+            generator = new TestDataGenerator(cu, coverage, classMethods.methodConditions, classMethods.methodBranchBooleans);
+        }
         HashMap<String,List<List<Object>>> testCases = generator.testGeneration(classMethods);
 
     }

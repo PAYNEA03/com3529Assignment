@@ -1,23 +1,35 @@
 package assignmentFiles.execution;
 
 import assignmentFiles.instrumentedFiles.*;
+import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.type.Type;
 import assignmentFiles.utils.Pair;
 
 import java.io.File;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 
 
 public class TestDataGenerator {
+    private CompilationUnit compilationUnit;
 
-    static final int ITERATIONS = 1250;
-    static final int MIN_INT = -15;
-    static final int MAX_INT = 15;
-    static final double MIN_DOUBLE = -15.;
-    static final double MAX_DOUBLE = 15.;
+    int ITERATIONS = 1250;
+    int MIN_INT = -15;
+    int MAX_INT = 15;
+    double MIN_DOUBLE = -15.;
+    double MAX_DOUBLE = 15.;
+    int MIN_STRING_LEN = 5;
+    int MAX_STRING_LEN = 30;
 
-    private String generationType;
+    //alphanumeric is the type of strings generated, alphabetic and numeric if true, only alphabetic if false
+    boolean alphanumeric = true;
+
+    //MAX_ATTEMPTS is the amount of times a method will have inputs generated for it and fail before the method is removed
+    // i.e. the point at which the program deems it too difficult to generate input object for it
+    static final int MAX_ATTEMPTS = 30;
+
     private String coverageCriteria;
 
     private Random rand;
@@ -48,22 +60,18 @@ public class TestDataGenerator {
 
     private List<Object> nextParameterSet;
 
-    public TestDataGenerator(String cc,String gt,  HashMap<String, HashMap<Integer, Pair<Boolean, Boolean>>> methodConditions,
+    public TestDataGenerator(CompilationUnit cu, String cc, HashMap<String, HashMap<Integer, Pair<Boolean, Boolean>>> methodConditions,
                              HashMap<String, HashMap<Integer, Pair<Boolean, Boolean>>> methodBranches){
+        compilationUnit = cu;
         coverageCriteria = cc;
-        generationType = gt;
 
         //create conditionRecords and branchRecords from methodConditions and methodBranches
 
         this.conditionRecords = toRecords(methodConditions);
         this.branchRecords = toRecords(methodBranches);
 
-        if (generationType.equals("search")){
-            //
-        }
-        else {
-            rand = new Random();
-        }
+        rand = new Random();
+
         if (coverageCriteria.equals("MCDC")){
 
             //populate methodConditionsWithPairs for tracking coverage
@@ -97,6 +105,25 @@ public class TestDataGenerator {
         }
     }
 
+    //Constructor where the user inputs configurable maximum and minimum values for generated int and double inputs
+    // and min and max lengths for generated string inputs
+    public TestDataGenerator(CompilationUnit cu, String cc, HashMap<String, HashMap<Integer, Pair<Boolean, Boolean>>> methodConditions,
+                             HashMap<String, HashMap<Integer, Pair<Boolean, Boolean>>> methodBranches, Double min_doub,
+                             Double max_doub, Integer min_int, Integer max_int, Integer min_str_len, Integer max_str_len,
+                             Boolean alphanumeric){
+        this(cu, cc, methodConditions, methodBranches);
+        if (min_doub != null){
+            MIN_DOUBLE = min_doub;
+        }
+
+        MAX_DOUBLE = max_doub;
+        MIN_INT = min_int;
+        MAX_INT = max_int;
+        MIN_STRING_LEN = min_str_len;
+        MAX_STRING_LEN = max_str_len;
+        this.alphanumeric = alphanumeric;
+    }
+
     /** testGeneration takes the Instrument instance that successfully
      *
      * @param classMethods
@@ -107,15 +134,18 @@ public class TestDataGenerator {
         Set<Integer> coveredBranches = new TreeSet<>();
         HashMap<Integer,Boolean> coveredConditions = new HashMap<>();
         Set<Integer> definitiveCoveredBranches = new TreeSet<>();
-        HashMap<Integer,Pair<Boolean,Boolean>> definitiveCoveredConditions = new HashMap<>();
 
 
 
         //the test case output file
         //format MethodName - List of (each element is a test case) of Lists (each element is a parameter for that method)
         HashMap<String,List<List<Object>>> testCases = new HashMap<>();
+        //failed attempts catalogues all the times each method has failed to have its inputs generated,
+        // reach more than MAX_ATTEMPTS and the program gives up with test cases for that method
+        HashMap<String,Integer> failedAttempts = new HashMap<>();
         for (String classMethod : classMethods.methodDetails.keySet()){
             testCases.put(classMethod,new ArrayList<>());
+            failedAttempts.put(classMethod,0);
         }
 
         HashMap<String, List> methodDetailsX = classMethods.methodDetails;
@@ -130,135 +160,156 @@ public class TestDataGenerator {
                 currentMethod = methodEntry.getKey();
 
                 /**GENERATE THE TEST CASE INPUTS**/
-                //if its a search based technique calculate the next set of parameters in the search for every method
-                if (generationType == "search"){
-                    generateInputsBySearch();
-                }
 
-                int paramNum = 0;
+                boolean successfulInputGeneration = true;
                 //assign values to each parameter variable
+                failedAttempt:
                 for (Object h : methodEntry.getValue()) {
                     HashMap t = (HashMap) h;
                     String parameterType = ((Type)t.get("paramType")).asString();
                     //System.out.println(parameterType); getting the parameter type works :)
-                    if (parameterType == "double"){
-                        t.put("value", generateDouble(paramNum));
-                    }
-                    else { //if (parameterType == "int"){
-                        t.put("value", generateInt(paramNum));
-                    }
+                    switch (parameterType){
 
-                    paramNum++;
-                }
-
-                //if its MCDC we want to reset coveredBranches and coveredConditions so we can check their connection
-                if (coverageCriteria == "MCDC"){
-                    coveredBranches = new TreeSet<>();
-                    coveredConditions = new HashMap<>();
-                }
-
-                // print iteration progress and pass updated hashmap with correctly generated values attached
-                System.out.println("~~~~~~~~~~~~Call " + (i+1) + "~~~~~~~~~");
-                Object result = Instrumented.assignVariables(methodEntry, coveredBranches, coveredConditions);
-                System.out.println("-> " + result);
-                System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
-
-                //evaluate whether these inputs are worth making into a test case
-                boolean success = false;
-                //for MCDC
-                String testCasePartner = null;
-
-                /* COVERAGE CHECKING**/ //- are these inputs worth making a test case out of?
-                switch (coverageCriteria) {
-                case "MCDC":
-                    //check coveredBranches against MCDCoverage list, non-appearing conditions are considered false
-                    Pair<Boolean,String> results = isNewMCDCTestCase(methodEntry,coveredBranches, coveredConditions);
-                    if (results.getRight() != null){
-                        testCasePartner = results.getRight();
-                    }
-                    break;
-
-                //Branch Coverage
-                //we check what branches are now covered (i.e. aren't in the definitiveCoveredBranches)
-                //and if new branches were found then add these inputs as a test case
-                case "branch":
-                    success = isNewBranchTestCase(coveredBranches, definitiveCoveredBranches);
-                    break;
-
-                //Condition Coverage
-                //we check what conditions have had which truth values assigned  (i.e. aren't in the definitiveCoveredConditions)
-                //and if new conditions were found then add these inputs as a test case
-                case "condition":
-                    success = isNewConditionTestCase(coveredConditions);
-                }
-
-                //if the test case was a success add it to the testCases
-                if (success){
-                    System.out.println("*** new test case: "+methodEntry.getValue().toString());
-//                    loop adds result to methodEntry to allow asserting in testcases
-                    for (Object t: methodEntry.getValue()) {
-                        HashMap h = (HashMap) t;
-                        h.put("result",result);
-                    }
-                    testCases.get(methodEntry.getKey()).add(methodEntry.getValue());
-                    //also don't forget to add this test cases partner from MCDCoverage list if its MCDC coverage
-                    if (testCasePartner != null){
-                        //then the test case partner is real so use testCasePartner as the key to get it as the partner
-                        // of the current testcase
-
-                        //find testCasePartner in MCDCoverage and add it as a test case where tsetCasePartner is the
-                        //conditionSequence key to MCDCoverage
-                        HashMap<String,Object> partnerInfo = (HashMap)MCDCoverage.get(methodEntry.getKey()).get(testCasePartner);
-                        testCases.get(methodEntry.getKey()).add((List)partnerInfo.get("parameters"));
-                    }
-                }
-
-                /* METHOD COVERAGE EVALUATION**/
-                //evaluate whether the target coverage criteria have been reached for this method
-                boolean completelyCovered = true;
-                switch (coverageCriteria) {
-                    //MCDC
-                    //this evaluation will be whether all the conditions for that class have a test case pair
-                    // where all other conditions are minor and stay the same and the major condition flips with the
-                    // predicate/branch
-                    case "MCDC":
-                        for (Map.Entry<Integer,Boolean> coverage : methodConditionsWithPairs.get(currentMethod).entrySet()){
-                            if (!coverage.getValue()){
-                                completelyCovered = false;
-                                break;
-                            }
-                        }
+                    case "double":
+                        t.put("value", generateDouble());
                         break;
-
-                    //Branch Coverage
-                    //has this method got any more branches in methodBranchesCovered that aren't true/covered
-                    case "branch":
-                        for (Map.Entry<Integer,Boolean> coverage : methodBranchesCovered.get(currentMethod).entrySet()){
-                            if (!coverage.getValue()){
-                                completelyCovered = false;
-                                break;
-                            }
-                        }
+                    case "int":
+                        t.put("value", generateInt());
                         break;
-
-                    //Condition Coverage
-                    //has this method got any more conditions in methodConditionsCovered that aren't both true
-                    // (i.e. has been evaluated to true and false in each)
-                    case "condition":
-                        for (Map.Entry<Integer,Pair<Boolean,Boolean>> coverage : methodConditionsCovered.get(currentMethod).entrySet()){
-                            //check that left or right is not false (i.e. that true and false for that condition are covered)
-                            if (!coverage.getValue().getLeft()||!coverage.getValue().getRight()){
-                                completelyCovered = false;
-                                break;
-                            }
-                        }
+                    case "boolean":
+                        t.put("value", generateBoolean());
                         break;
+                    case "String":
+                        t.put("value", generateString());
+                        break;
+                    default:
+                        Optional<Object> newOther = generateOther((Type)t.get("paramType"));
+                        if (newOther.isPresent()){
+                            t.put("value", newOther.get());
+                        }
+                        else {
+                            System.out.println("Unable to initialise an input for: "+methodEntry.getKey());
+                            successfulInputGeneration = false;
+                            failedAttempts.replace(currentMethod,failedAttempts.get(currentMethod)+1);
+                            //if its failed to load the inputs more than MAX_ATTEMPTS add its name to removedMethods
+                            // to be removed next iteration
+                            if (failedAttempts.get(currentMethod)>MAX_ATTEMPTS){
+                                removedMethods.add(currentMethod);
+                            }
+                            break failedAttempt;
+                        }
+                    }
                 }
-                //if its deemed that the current method is now fully covered add its name to removedMethods
-                if (completelyCovered){
-                    System.out.println(currentMethod+" has 100% coverage");
-                    System.out.println(methodDetailsX.size()-1+" methods left to cover");
-                    removedMethods.add(currentMethod);
+                if (successfulInputGeneration) {
+                    //if its MCDC we want to reset coveredBranches and coveredConditions so we can check their connection
+                    if (coverageCriteria.equals("MCDC")) {
+                        coveredBranches = new TreeSet<>();
+                        coveredConditions = new HashMap<>();
+                    }
+
+                    // print iteration progress and pass updated hashmap with correctly generated values attached
+                    System.out.println("~~~~~~~~~~~~Call " + (i + 1) + "~~~~~~~~~");
+                    Object result = Instrumented.assignVariables(methodEntry, coveredBranches, coveredConditions);
+                    System.out.println("-> " + result);
+                    System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
+                    //evaluate whether these inputs are worth making into a test case
+                    boolean success = false;
+                    //for MCDC
+                    String testCasePartner = null;
+
+                    /** COVERAGE CHECKING**/ //- are these inputs worth making a test case out of?
+                    switch (coverageCriteria) {
+                        case "MCDC":
+                            //check coveredBranches against MCDCoverage list, non-appearing conditions are considered false
+                            Pair<Boolean, String> results = isNewMCDCTestCase(methodEntry, coveredBranches, coveredConditions);
+                            if (results.getRight() != null) {
+                                testCasePartner = results.getRight();
+                            }
+                            break;
+
+                        //Branch Coverage
+                        //we check what branches are now covered (i.e. aren't in the definitiveCoveredBranches)
+                        //and if new branches were found then add these inputs as a test case
+                        case "branch":
+                            success = isNewBranchTestCase(coveredBranches, definitiveCoveredBranches);
+                            break;
+
+                        //Condition Coverage
+                        //we check what conditions have had which truth values assigned  (i.e. aren't in the definitiveCoveredConditions)
+                        //and if new conditions were found then add these inputs as a test case
+                        case "condition":
+                            success = isNewConditionTestCase(coveredConditions);
+                    }
+
+                    //if the test case was a success add it to the testCases
+                    if (success) {
+                        System.out.println("*** new test case: " + methodEntry.getValue().toString());
+                        //                    loop adds result to methodEntry to allow asserting in testcases
+                        for (Object t : methodEntry.getValue()) {
+                            HashMap h = (HashMap) t;
+                            h.put("result", result);
+                        }
+                        testCases.get(methodEntry.getKey()).add(methodEntry.getValue());
+                        //also don't forget to add this test cases partner from MCDCoverage list if its MCDC coverage
+                        if (testCasePartner != null) {
+                            //then the test case partner is real so use testCasePartner as the key to get it as the partner
+                            // of the current testcase
+
+                            //find testCasePartner in MCDCoverage and add it as a test case where tsetCasePartner is the
+                            //conditionSequence key to MCDCoverage
+                            HashMap<String, Object> partnerInfo = (HashMap) MCDCoverage.get(methodEntry.getKey()).get(testCasePartner);
+                            testCases.get(methodEntry.getKey()).add((List) partnerInfo.get("parameters"));
+                        }
+                    }
+
+                    /** METHOD COVERAGE EVALUATION**/
+                    //evaluate whether the target coverage criteria have been reached for this method
+                    boolean completelyCovered = true;
+                    switch (coverageCriteria) {
+                        //MCDC
+                        //this evaluation will be whether all the conditions for that class have a test case pair
+                        // where all other conditions are minor and stay the same and the major condition flips with the
+                        // predicate/branch
+                        case "MCDC":
+                            for (Map.Entry<Integer, Boolean> coverage : methodConditionsWithPairs.get(currentMethod).entrySet()) {
+                                if (!coverage.getValue()) {
+                                    completelyCovered = false;
+                                    break;
+                                }
+                            }
+                            break;
+
+                        //Branch Coverage
+                        //has this method got any more branches in methodBranchesCovered that aren't true/covered
+                        case "branch":
+                            for (Map.Entry<Integer, Boolean> coverage : methodBranchesCovered.get(currentMethod).entrySet()) {
+                                if (!coverage.getValue()) {
+                                    completelyCovered = false;
+                                    break;
+                                }
+                            }
+                            break;
+
+                        //Condition Coverage
+                        //has this method got any more conditions in methodConditionsCovered that aren't both true
+                        // (i.e. has been evaluated to true and false in each)
+                        case "condition":
+                            for (Map.Entry<Integer, Pair<Boolean, Boolean>> coverage : methodConditionsCovered.get(currentMethod).entrySet()) {
+                                //check that left or right is not false (i.e. that true and false for that condition are covered)
+                                if (!coverage.getValue().getLeft() || !coverage.getValue().getRight()) {
+                                    completelyCovered = false;
+                                    break;
+                                }
+                            }
+                            break;
+                    }
+                    //if its deemed that the current method is now fully covered add its name to removedMethods
+                    if (completelyCovered) {
+                        System.out.println(currentMethod + " has 100% coverage");
+                        System.out.println(methodDetailsX.size() - 1 + " methods left to cover");
+                        removedMethods.add(currentMethod);
+                    }
                 }
             }
             //before the next iteration begins - remove all methods in removedMethods from classMethods.methodDetails - i.e. are fully covered
@@ -273,7 +324,7 @@ public class TestDataGenerator {
             }
         }
 
-        /* TEST GENERATION RESULTS SUMMARY **/
+        /** TEST GENERATION RESULTS SUMMARY **/
         System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         switch (coverageCriteria) {
             case "branch":
@@ -298,7 +349,7 @@ public class TestDataGenerator {
     }
 
 
-    /* ****** MCDC *******/
+    /******* MCDC *******/
     /** isNewMCDCTestCase uses the MCDCoverage data structure to find if the new test case given the conditions and
      *   branches it covered whether it should be added into the test suite
      *
@@ -534,64 +585,165 @@ public class TestDataGenerator {
 
 
     /**TEST DATA GENERATION*/
-    private int generateInt(int i){
-        if (generationType == "search"){
-            return (int)nextParameterSet.get(i);
-        }
-        else { //if (generationType == "random"){
-            return randomInt(rand);
-        }
-    }
-
-    private double generateDouble(int i){
-        if (generationType == "search"){
-            return (double)nextParameterSet.get(i);
-        }
-        else {//if (generationType == "random"){
-            return randomDouble(rand);
+    private int generateInt(){
+        if (MIN_INT == Integer.MIN_VALUE && MAX_INT == Integer.MAX_VALUE) {
+            return rand.nextInt();
+        } else {
+            return rand.nextInt((MAX_INT - MIN_INT + 1)) + MIN_INT;
         }
     }
 
-    private List generateInputsBySearch(){
-        nextParameterSet = new ArrayList<Object>();
-        return nextParameterSet;
+    private double generateDouble(){
+        if (MIN_DOUBLE == Double.MIN_VALUE && MAX_DOUBLE == Double.MAX_VALUE) {
+            return rand.nextDouble();
+        } else {
+            return (MAX_DOUBLE - MIN_DOUBLE + 1.)*rand.nextDouble() + MIN_DOUBLE;
+        }
     }
 
-    public static void searchBasedGeneration(Instrument classMethods) {
-//            Instrument Instances:
-//            this.path = path;
-//            this.methodDetails = methodDetail;
-//            this.ifStmts = ifStmtLogs;
-//            this.branchTotal = branchCount;
-//            this.conditionTotal = conditionCount;
-
-
-        ////        example code to parse hashmaps
-        for (Map.Entry<String, List> entry : classMethods.methodDetails.entrySet()) {
-            String key = entry.getKey();
-            List value = entry.getValue();
-            System.out.println("Key: "+ key);
-            System.out.println("Vals: " + value);
+    private boolean generateBoolean(){
+        if (rand.nextDouble() >= 0.5){
+            return true;
         }
+        else {
+            return false;
+        }
+    }
 
-        System.out.println("");
-
-        for (Map.Entry<Integer, Expression> entry : classMethods.ifStmts.entrySet()) {
-            Integer key = entry.getKey();
-            Expression value = entry.getValue();
-            System.out.println("logCondition Key: "+ key);
-            System.out.println("Vals: " + value);
-
-//            if not a method call example isLeapYear(year, coveredBranches), breakdown condition
-            if (!value.isMethodCallExpr()) {
-                System.out.println("Left: " + value.asBinaryExpr().getLeft());
-                System.out.println("Right: " + value.asBinaryExpr().getRight());
-                System.out.println("Operator: " + value.asBinaryExpr().getOperator());
-                System.out.println("");
+    /** try to discern the type of this other input from its javaparser Type and generate an object for it
+     *
+     * @param parameterType javaparser Type variable for this parameter
+     * @return an Optional Object which will only exist if it successfully generated the input object
+     */
+    private Optional<Object> generateOther(Type parameterType){
+        Class<?> cls = null;
+        //if its a primitive type then the type will be a part of java.lang and so getting its class will be quite easy
+        if (parameterType.isPrimitiveType()) {
+            try {
+                cls = Class.forName("java.lang." + parameterType.toString());
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+                System.out.println("The program found a parameter type that it is not able to generate input for " + parameterType.toString());
+                System.exit(0);
+            }
+        } else {
+            //try and get it through the compilation unit
+            if (compilationUnit.getClassByName(parameterType.toString()).isPresent()) {
+                if (compilationUnit.getClassByName(parameterType.toString()).get().getFullyQualifiedName().isPresent()) {
+                    String className = compilationUnit.getClassByName(parameterType.toString()).get().getFullyQualifiedName().get();
+                    try {
+                        cls = Class.forName(className);
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                        System.out.println("The program found a parameter type that it is not able to generate input for " + parameterType.toString());
+                        System.exit(0);
+                    }
+                }
             }
         }
 
+        return constructOther(cls);
     }
+
+    /** This the class that actually takes the class of the object to be instantiated and attempts to make an instance
+     *   for the test case. Can be called recursively and will have the basecase of either managing to create the instance
+     *   or being unable to make any of the instances needed
+     *
+     * @param clazz the class of the object that is to have an instance created
+     * @return an Optional Object which will only exist if a version of the object was successfully created
+     */
+    private Optional<Object> constructOther(Class<?> clazz){
+        //if we successfully found the class lets see if we can manage to create on via one of its constructors
+        if (clazz != null){
+            Constructor[] cs = clazz.getConstructors();
+            //iterate through constructors until you find one that can be completed
+            for (Constructor<?> cons : cs){
+                boolean success = true;
+                Object[] consInputs = new Object[cons.getParameterCount()];
+                //iterate through all the constructor's parameters and try to generate inputs for each
+                Class<?>[] params = cons.getParameterTypes();
+                outer:
+                for (int i = 0; i < params.length; i++){
+                    switch (params[i].getTypeName()){
+                        case "String":
+                            consInputs[i] = generateString();
+                            break;
+                        case "int":
+                        case "Integer":
+                            consInputs[i] = generateInt();
+                            break;
+                        case "double":
+                        case "Double":
+                            consInputs[i] = generateDouble();
+                            break;
+                        case "boolean":
+                        case "Boolean":
+                            consInputs[i] = generateBoolean();
+                            break;
+                        //the default here is to start a recursion where the generateOther is called and if it returns nothing
+                        //then there was something it could not generate
+                        default:
+                            Optional<Object> newOther = constructOther(params[i]);
+                            if (newOther.isPresent()){
+                                consInputs[i] = newOther;
+                            }
+                            else {
+                                success = false;
+                                break outer;//do a double break as this constructor is a dud
+                            }
+                    }
+                }
+
+                //if a completable set of inputs was found then construct the object and return it, if it doesnt work carry on
+                // with the other constructors
+                if (success){
+                    try {
+                        Object finalObject = cons.newInstance(consInputs);
+                        return Optional.of(finalObject);
+                    } catch (IllegalAccessException e) {
+                        e.printStackTrace();
+                        System.out.println("System attempted to instantiate test data it did not have access to");
+                    } catch (InstantiationException e) {
+                        e.printStackTrace();
+                    } catch (InvocationTargetException e) {
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+
+        }
+        //failed to create the object return an empty Optional
+        return Optional.empty();
+    }
+
+    /** generates a random string of a random length in the range max and min string length that is either alphanumeric
+     *   or just alphabetic based on user passed inputs, by default alphanumeric of range 5 to 30
+     *
+     * @return random string
+     */
+    private String generateString(){
+        // use min and max string length to get the string length of this particular input
+        int targetStringLength = rand.nextInt((MAX_STRING_LEN - MIN_STRING_LEN + 1)) + MIN_STRING_LEN;
+
+        //set the limits of which characters to include in the random generation to alphabetic or alphanumeric characters only
+        int leftLimit = 97;
+        if (alphanumeric) {
+            leftLimit = 48; // numeral '0'
+        }
+        int rightLimit = 122; // letter 'z'
+
+        //generate alphanumeric string
+        String generatedString = rand.ints(leftLimit, rightLimit + 1)
+                .filter(i -> (i <= 57 || i >= 65) && (i <= 90 || i >= 97))
+                .limit(targetStringLength)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
+
+        return generatedString;
+    }
+
+    /** Instrumentation Utils */
 
     public static int assignValues(String name, List value) {
         int assignValue = 0;
@@ -604,28 +756,6 @@ public class TestDataGenerator {
         }
         System.out.println("Var: " + name + ", value: " + assignValue);
         return assignValue;
-    }
-
-    /** randomInt is taken from the week5 lectures of the RandomlyTestTriangle class and
-     * has not been changed in any form
-     * */
-    static int randomInt(Random r) {
-        if (MIN_INT == Integer.MIN_VALUE && MAX_INT == Integer.MAX_VALUE) {
-            return r.nextInt();
-        } else {
-            return r.nextInt((MAX_INT - MIN_INT + 1)) + MIN_INT;
-        }
-    }
-
-    /** randomDouble is an altered version of randomInt from
-     * the week5 lectures in the RandomlyTestTriangle class
-     * */
-    static double randomDouble(Random r) {
-        if (MIN_DOUBLE == Double.MIN_VALUE && MAX_DOUBLE == Double.MAX_VALUE) {
-            return r.nextDouble();
-        } else {
-            return (MAX_DOUBLE - MIN_DOUBLE + 1.)*r.nextDouble() + MIN_DOUBLE;
-        }
     }
 
     /** coveredBranch is taken from the week5 lectures of the RandomlyTestTriangle class and
@@ -642,18 +772,6 @@ public class TestDataGenerator {
         boolean result = condition;
         coveredConditions.put(id, result);
         return result;
-    }
-
-    static int hammingDist(String str1, String str2)
-    {
-        int i = 0, count = 0;
-        while (i < str1.length())
-        {
-            if (str1.charAt(i) != str2.charAt(i))
-                count++;
-            i++;
-        }
-        return count;
     }
 
     /** when passed two conditionSequences it will return the index at which the condition is flipped (i.e. the major
@@ -688,6 +806,12 @@ public class TestDataGenerator {
         return -1;
     }
 
+    /** toRecords takes the method and their integer condition or branch ids and sorts them to make a consistent
+     *   ordered sequence for the creation of conditionSequences and branchSequences for MCDC coverage checking purposes
+     *
+     * @param methods the hashmap from methodName to that methods contained branch/condition ids and truth values
+     * @return hashmap from methodName to sorted list of their contained branch/condition ids
+     */
     private HashMap<String,List<Integer>> toRecords(HashMap<String, HashMap<Integer, Pair<Boolean, Boolean>>> methods){
         HashMap<String,List<Integer>> output = new HashMap<>();
         for (Map.Entry<String,HashMap<Integer,Pair<Boolean,Boolean>>> mC : methods.entrySet()){
