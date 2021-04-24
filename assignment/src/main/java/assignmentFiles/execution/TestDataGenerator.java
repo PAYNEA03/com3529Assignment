@@ -745,13 +745,14 @@ public class TestDataGenerator {
 
     /** Instrumentation Utils */
 
-    public static int assignValues(String name, List value) {
-        int assignValue = 0;
+    public static Object assignValues(String name, List value) {
+        Object assignValue = 0;
         //searches hashmap for matching variable name and assigns value to it
         for (Object i: value) {
             HashMap h = (HashMap) i;
+
             if (h.get("paramName").toString().equals(name)) {
-                assignValue = (int) h.get("value");
+                assignValue = h.get("value");
             }
         }
         System.out.println("Var: " + name + ", value: " + assignValue);

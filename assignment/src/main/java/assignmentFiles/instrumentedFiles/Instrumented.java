@@ -39,9 +39,9 @@ public class Instrumented {
         List methodParams = paramList.getValue();
         if (methodName.equals("calculate")) {;
         System.out.println("********Parsing Method: calculate ****");;
-        double weightInPounds = TestDataGenerator.assignValues("weightInPounds", methodParams);
-        int heightFeet = TestDataGenerator.assignValues("heightFeet", methodParams);
-        int heightInches = TestDataGenerator.assignValues("heightInches", methodParams);
+        double weightInPounds = (double) TestDataGenerator.assignValues("weightInPounds", methodParams);
+        int heightFeet = (int) TestDataGenerator.assignValues("heightFeet", methodParams);
+        int heightInches = (int) TestDataGenerator.assignValues("heightInches", methodParams);
         try {;
         result = calculate(weightInPounds, heightFeet, heightInches, coveredBranches, coveredConditions);
         } catch (Exception e) {;

@@ -49,6 +49,8 @@ public class Main {
         }
         HashMap<String,List<List<Object>>> testCases = generator.testGeneration(classMethods);
 
+        System.out.println(testCases);
+
     }
 
 }
