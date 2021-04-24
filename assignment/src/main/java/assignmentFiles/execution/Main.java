@@ -50,7 +50,9 @@ public class Main {
         }
         HashMap<String,List<List<HashMap<String,Object>>>> testCases = generator.testGeneration(classMethods);
 
-        System.out.println(testCases);
+
+        WriteToFile.writeTestSuite(args[0],testCases,classMethods.methodDetails,classMethods.className,classMethods.parsedEnum);
+
 
     }
 

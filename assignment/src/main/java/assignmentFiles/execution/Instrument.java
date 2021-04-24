@@ -4,7 +4,9 @@ import assignmentFiles.utils.Pair;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Modifier;
 import com.github.javaparser.ast.Node;
+import com.github.javaparser.ast.NodeList;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
+import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
 import com.github.javaparser.ast.expr.*;
@@ -25,6 +27,8 @@ public class Instrument {
     private static List<String> classNames = new ArrayList<>();
     public static HashMap<String, HashMap<Integer,Pair<Boolean, Boolean>>> methodConditions = new HashMap<>();
     public static HashMap<String, HashMap<Integer,Pair<Boolean, Boolean>>> methodBranches = new HashMap<>();
+    public static EnumDeclaration parsedEnum;
+    private final EnumDeclaration enumDec;
 
     private HashMap<String, HashMap<Integer, Pair<Boolean, Boolean>>> methodConditionsWithPairs;
     public HashMap<String, HashMap<Integer,Pair<Boolean, Boolean>>> methodBranchBooleans;
@@ -34,6 +38,7 @@ public class Instrument {
     public String className;
     public HashMap<String, List> methodDetails;
     public HashMap<Integer, Expression> ifStmts;
+
 
     public static BinaryExpr.Operator[] operators = {
             BinaryExpr.Operator.PLUS,
@@ -51,6 +56,8 @@ public class Instrument {
         this.conditionTotal = conditionCount;
         this.methodConditionsWithPairs = methodConditions;
         this.methodBranchBooleans = methodBranches;
+        this.className = classNames.get(0);
+        this.enumDec = parsedEnum;
     }
 
 
@@ -59,7 +66,6 @@ public class Instrument {
         // get class name
         VoidVisitor<List<String>> classNameVisitor = new ClassNameCollector();
         classNameVisitor.visit(cu,classNames);
-
         // set param to instrument into class
         String[] param = {"Set<Integer>", "coveredBranches"};
 
@@ -73,6 +79,9 @@ public class Instrument {
         //instrument if statements
         VoidVisitor ifStmtParser = new Instrument.IfStmtParser();
         ifStmtParser.visit(cu,param);
+
+        VoidVisitor enumParser = new Instrument.EnumParser();
+        enumParser.visit(cu,null);
 
         // instrument while statements
         VoidVisitor whileStmtParser = new Instrument.WhileStmtParser();
@@ -267,6 +276,58 @@ public class Instrument {
 
     }
 
+    public static void createTestCase(List item, String methodName, ClassOrInterfaceDeclaration myClass,
+                                      int count, HashMap<String, List> methodDetails, String className, EnumDeclaration parsedEnum) {
+
+    //setup method structure
+        MethodDeclaration method = myClass.addMethod(methodName+count);
+        method.addAnnotation("Test");
+        method.setModifiers(Modifier.Keyword.PUBLIC).setType("void");
+
+    //get common details
+        HashMap methodHash = (HashMap) methodDetails.get(methodName).get(0);
+        Object methodType = methodHash.get("methodType");
+        HashMap testInfo = (HashMap) item.get(0);
+        Object result = testInfo.get("result");
+
+    // iterate and assign all variables to string
+        String args = "";
+        for (Object o: item) {
+            HashMap h = (HashMap) o;
+            if (args.isEmpty())
+                args = h.get("value").toString();
+            else
+                args = args + ", " + h.get("value").toString();
+        }
+
+
+    //set class call and assign to a variable the result
+        method.setBody(new BlockStmt());
+
+        if (parsedEnum == null) {
+            method.getBody().get().addStatement(new NameExpr(
+                    methodType + " var = " + className + "." + methodName + "(" + args + ")"
+
+            ));
+            //        assert equal to result
+            method.getBody().get().addStatement(new NameExpr(
+                    "assertEquals(" + result + ", " + "var)"
+            ));
+        } else {
+            method.getBody().get().addStatement(new NameExpr(
+                    className + "." + methodType + " var = " + className + "." + methodName + "(" + args + ")"
+            ));
+            //        assert equal to result
+            method.getBody().get().addStatement(new NameExpr(
+                    "assertEquals(" + className + "." + methodType + "." + result + ", " + "var)"
+            ));
+        }
+
+
+
+
+    }
+
     //    https://stackoverflow.com/questions/65377062/javaparser-how-to-get-classname-in-compilationunit
     private static class ClassNameCollector extends VoidVisitorAdapter<List<String>>{
         @Override
@@ -313,6 +374,7 @@ public class Instrument {
                 HashMap<String, Object> methodDetails = new HashMap<>();
                 methodDetails.put("paramName", p.getName());
                 methodDetails.put("paramType", p.getType());
+                methodDetails.put("methodType",md.getType());
 //                methodDetails.put("value", 0);
                 parameterList.add(methodDetails);
             }
@@ -355,6 +417,16 @@ public class Instrument {
             } else {
                 md.setCondition(addConditionLogger(md.getCondition()));
             }
+        }
+
+    }
+
+    private static class EnumParser extends VoidVisitorAdapter<Void> {
+        @Override
+        public void visit(EnumDeclaration md, Void args) {
+            super.visit(md, args);
+
+            parsedEnum = md;
         }
 
     }
