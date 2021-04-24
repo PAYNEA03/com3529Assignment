@@ -385,8 +385,6 @@ public class TestDataGenerator {
                     break;
                 }
 
-                //TODO split these next two sections into separate functions?
-
                 // check if the conditionSequence has a hamming distance of 1 to the current key (i.e. only 1 condition different),
                 // their branchSequences are different and that major condition doesn't already have a pair
                 majorCondition = getIndexOfMajorCondition(conditionSequence,MCDCRecord.getKey());

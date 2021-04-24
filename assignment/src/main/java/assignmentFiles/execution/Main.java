@@ -16,7 +16,8 @@ public class Main {
             "src/main/java/assignmentFiles/subjectFiles/BMICalculator.java",
             "src/main/java/assignmentFiles/subjectFiles/Calendar.java",
             "src/main/java/assignmentFiles/subjectFiles/VendingMachine.java",
-            "src/main/java/assignmentFiles/subjectFiles/SignUtils.java"
+            "src/main/java/assignmentFiles/subjectFiles/SignUtils.java",
+            "src/main/java/assignmentFiles/subjectFiles/CompareShapes.java"
     };
 
     public static void main(String[] args) throws Exception {

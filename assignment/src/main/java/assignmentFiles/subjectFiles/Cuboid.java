@@ -1,10 +1,10 @@
 package assignmentFiles.subjectFiles;
 
 public class Cuboid {
-    boolean cube = false;
-    int width;
-    int length;
-    int height;
+    public boolean cube = false;
+    public int width;
+    public int length;
+    public int height;
 
     public Cuboid(Rectangle rect1, Rectangle rect2, Rectangle rect3) throws Exception{
         length = rect1.side1;
