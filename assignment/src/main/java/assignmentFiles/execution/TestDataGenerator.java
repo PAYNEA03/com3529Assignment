@@ -216,16 +216,15 @@ public class TestDataGenerator {
                     //evaluate whether these inputs are worth making into a test case
                     boolean success = false;
                     //for MCDC
-                    String testCasePartner = null;
+                    Optional<String> testCasePartner = Optional.empty();
 
                     /** COVERAGE CHECKING**/ //- are these inputs worth making a test case out of?
                     switch (coverageCriteria) {
                         case "MCDC":
                             //check coveredBranches against MCDCoverage list, non-appearing conditions are considered false
-                            Pair<Boolean, String> results = isNewMCDCTestCase(methodEntry, coveredBranches, coveredConditions);
-                            if (results.getRight() != null) {
-                                testCasePartner = results.getRight();
-                            }
+                            Pair<Boolean, Optional<String>> results = isNewMCDCTestCase(methodEntry, coveredBranches, coveredConditions);
+                            testCasePartner = results.getRight();
+
                             success = results.getLeft();
                             break;
 
@@ -251,16 +250,16 @@ public class TestDataGenerator {
                             HashMap h = (HashMap) t;
                             h.put("result", result);
                         }
-                        testCases.get(methodEntry.getKey()).add(methodEntry.getValue());
+                        testCases.get(currentMethod).add(methodEntry.getValue());
                         //also don't forget to add this test cases partner from MCDCoverage list if its MCDC coverage
-                        if (testCasePartner != null) {
+                        if (testCasePartner.isPresent()) {
                             //then the test case partner is real so use testCasePartner as the key to get it as the partner
                             // of the current testcase
 
                             //find testCasePartner in MCDCoverage and add it as a test case where tsetCasePartner is the
                             //conditionSequence key to MCDCoverage
-                            HashMap<String, Object> partnerInfo = (HashMap) MCDCoverage.get(methodEntry.getKey()).get(testCasePartner);
-                            testCases.get(methodEntry.getKey()).add((List) partnerInfo.get("parameters"));
+                            HashMap<String, Object> partnerInfo = (HashMap) MCDCoverage.get(methodEntry.getKey()).get(testCasePartner.get());
+                            testCases.get(currentMethod).add((List) partnerInfo.get("parameters"));
                         }
                     }
 
@@ -313,6 +312,7 @@ public class TestDataGenerator {
                     }
                 }
             }
+            System.out.println(testCases.toString());
             //before the next iteration begins - remove all methods in removedMethods from classMethods.methodDetails - i.e. are fully covered
             // so that they aren't in methodDetailsX and have any check next iteration
             for (String removedMethod : removedMethods) {
@@ -360,14 +360,14 @@ public class TestDataGenerator {
      * @return a Pair object where the left hand side is whether it was a success and the current is to be added as a test case
      *          and the string is the conditionSequence of the partner to it in the MCDCoverage data structure
      */
-    private Pair<Boolean,String> isNewMCDCTestCase(Map.Entry<String,List> methodInfo,Set<Integer> coveredBranches,HashMap<Integer,Boolean> coveredConditions){
+    private Pair<Boolean,Optional<String>> isNewMCDCTestCase(Map.Entry<String,List> methodInfo,Set<Integer> coveredBranches,HashMap<Integer,Boolean> coveredConditions){
         //remember - HashMap<String,HashMap<String,Object>> MCDCoverage - more at top of class
 
         //turn the results (coveredConditions and coveredBranches) into a strings that can be compared
         String conditionSequence = coveredConditionsIntoConditionSequence(coveredConditions);
         String branchSequence = coveredBranchesIntoBranchSequence(coveredBranches);
         boolean success = false;
-        String partner = null;
+        Optional<String> partner = Optional.empty();
         int majorCondition = -1;
 
         //check if new test case's conditionSequence is already a key
@@ -392,7 +392,7 @@ public class TestDataGenerator {
                         !majorConditionAlreadyCovered(majorCondition)){
                     //key will also be added if this is the first partner
                     if (MCDCRecord.getValue().isEmpty()){
-                        partner = MCDCRecord.getKey();
+                        partner = Optional.of(MCDCRecord.getKey());
                     }
                     //then add it to that key's hashmap as a partner and it'll be added as a test case
                     HashMap<String,Object> contents = new HashMap<>();
@@ -628,7 +628,9 @@ public class TestDataGenerator {
         } else {
             //try and get it through the compilation unit
             if (compilationUnit.getClassByName(parameterType.toString()).isPresent()) {
+                System.out.println("found class in the compilation unit: "+parameterType.toString());
                 if (compilationUnit.getClassByName(parameterType.toString()).get().getFullyQualifiedName().isPresent()) {
+                    System.out.println("found fully qualified class name in the compilation unit: "+compilationUnit.getClassByName(parameterType.toString()).get().getFullyQualifiedName().get());
                     String className = compilationUnit.getClassByName(parameterType.toString()).get().getFullyQualifiedName().get();
                     try {
                         cls = Class.forName(className);

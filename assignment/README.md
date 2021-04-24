@@ -42,6 +42,8 @@ following features have been implemented in this submission:
         - argument 9 - alphanumeric = boolean true if strings generated should be alphanumeric else alphabetic only
 3. The J-Unit test cases will then be put inside of BLANK with their respective outputs. It is up to you, the user, to decide whether the outputs are correct and change them accordingly.
 
+* Note that all classes used by the class to be instrumented must have an import statement for all classes that it references/uses even if said classes are in the same directory/package usually as the file gets taken out and put as Instrumented.java in the instrumentedFiles package
+
 ## Additional Features
 
 
