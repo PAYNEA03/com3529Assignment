@@ -13,6 +13,7 @@ public class Cuboid {
         if (length==width&&width==height){
             cube = true;
         }
+        /*
         if (length == rect2.side2 && width == rect3.side2 && height == rect1.side2){
 
         }
@@ -21,18 +22,18 @@ public class Cuboid {
         }
         else {
             throw new Exception();
-        }
+        } */
     }
 
     public Cuboid(Rectangle rect1, Rectangle rect2) throws Exception{
-        if (rect1.side1==rect1.side2 && rect1.side1==rect2.side1 && rect2.side1==rect2.side2){
+        //if (rect1.side1==rect1.side2 && rect1.side1==rect2.side1 && rect2.side1==rect2.side2){
             width = rect1.side1;
-            length = rect1.side1;
-            height = rect1.side1;
+            length = rect1.side2;
+            height = rect2.side2;
             cube = true;
-        }
-        else {
-            throw new Exception();
-        }
+        //}
+        //else {
+        //    throw new Exception();
+        //}
     }
 }

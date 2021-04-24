@@ -2,6 +2,7 @@ package assignmentFiles.execution;
 
 import assignmentFiles.instrumentedFiles.*;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
 import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.type.Type;
 import assignmentFiles.utils.Pair;
@@ -651,9 +652,28 @@ public class TestDataGenerator {
                 System.out.println("The program found a parameter type that it is not able to generate input for " + parameterType.toString());
                 System.exit(0);
             }
-        } else {
+        }
+        else {
             //try and get it through the compilation unit
-            if (compilationUnit.getClassByName(parameterType.toString()).isPresent()) {
+            boolean found = false;
+
+            //first check if its in one of the imports - iterate through and check if the identifier matches
+            for (ImportDeclaration anImport : compilationUnit.getImports()){
+                if (anImport.getName().getIdentifier().equals(parameterType.toString())){
+                    //a matching import was found!
+                    try {
+                        cls = Class.forName(anImport.getNameAsString());
+                        found = true;
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                        System.out.println("The program found a parameter type that it is not able to generate input for " + parameterType.toString());
+                    }
+
+                }
+            }
+
+            //otherwise try and get it as an inner class
+            if (compilationUnit.getClassByName(parameterType.toString()).isPresent() && !found) {
                 System.out.println("found class in the compilation unit: "+parameterType.toString());
                 if (compilationUnit.getClassByName(parameterType.toString()).get().getFullyQualifiedName().isPresent()) {
                     System.out.println("found fully qualified class name in the compilation unit: "+compilationUnit.getClassByName(parameterType.toString()).get().getFullyQualifiedName().get());
@@ -669,6 +689,8 @@ public class TestDataGenerator {
             }
         }
 
+        //send the found class through to be constructed and returned as an input
+        // (nothing is returned if cls is still null or it fails to construct)
         return constructOther(cls);
     }
 
@@ -712,7 +734,7 @@ public class TestDataGenerator {
                         default:
                             Optional<Object> newOther = constructOther(params[i]);
                             if (newOther.isPresent()){
-                                consInputs[i] = newOther;
+                                consInputs[i] = newOther.get();
                             }
                             else {
                                 success = false;
@@ -734,6 +756,10 @@ public class TestDataGenerator {
                         e.printStackTrace();
                     } catch (InvocationTargetException e) {
                         e.printStackTrace();
+                    } catch (IllegalArgumentException e) {
+                        e.printStackTrace();
+                        System.out.println("The system failed to construct an input parameter of type: "+clazz.getName());
+                        System.out.println("Reason: generated arguments illegal");
                     }
                 }
             }
