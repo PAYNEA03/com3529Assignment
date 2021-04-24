@@ -42,7 +42,9 @@ following features have been implemented in this submission:
         - argument 9 - alphanumeric = boolean true if strings generated should be alphanumeric else alphabetic only
 3. The J-Unit test cases will then be put inside of BLANK with their respective outputs. It is up to you, the user, to decide whether the outputs are correct and change them accordingly.
 
-## Additional Complexities
+## Additional Features
 
 
 ## Limitations
+
+* The names of the methods are used as keys in most of the hashmaps that hold the information about used for all the different types of coverage tracking and method input information for input generation. However, a huge oversight was overloading of methods, as its only the simple names (no package or full signature) of the methods used in this respect here. Therefore the program only works when passed classes without overloaded classes.

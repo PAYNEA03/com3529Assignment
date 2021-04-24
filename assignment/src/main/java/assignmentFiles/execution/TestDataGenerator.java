@@ -28,7 +28,7 @@ public class TestDataGenerator {
 
     //MAX_ATTEMPTS is the amount of times a method will have inputs generated for it and fail before the method is removed
     // i.e. the point at which the program deems it too difficult to generate input object for it
-    static final int MAX_ATTEMPTS = 30;
+    static final int MAX_ATTEMPTS = 100;
 
     private String coverageCriteria;
 
@@ -226,6 +226,7 @@ public class TestDataGenerator {
                             if (results.getRight() != null) {
                                 testCasePartner = results.getRight();
                             }
+                            success = results.getLeft();
                             break;
 
                         //Branch Coverage
@@ -343,7 +344,7 @@ public class TestDataGenerator {
         System.out.println();
 
         //print test cases
-        System.out.println(testCases.toString());
+        //System.out.println(testCases.toString());
 
         return testCases;
     }
@@ -521,7 +522,7 @@ public class TestDataGenerator {
             totalCoverage += thisMethodsCoverage;
             totalConditions += thisMethodsConditions;
         }
-        System.out.println("Total coverage of: " + totalCoverage + "/" + totalConditions);
+        System.out.println("Total MCDC coverage of: " + totalCoverage + "/" + totalConditions);
     }
 
     /******* BRANCH *******/
