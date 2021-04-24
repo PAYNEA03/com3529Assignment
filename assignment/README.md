@@ -28,7 +28,7 @@ following features have been implemented in this submission:
 ## Launch/Setup
 
 1. Place files you want to test inside the src directory somewhere, we recommend src/main/java/assignmentFiles/subjectFiles/ but anywhere will do
-2. Run Main.java with the following command line arguments:
+2. Run Main.java (it must be ran once to create the instrumented class and then a second time to create the test cases) with the following command line arguments:
 	- argument 1 - coverage criteria out of branch, condition and MCDC
 	- argument 2 - will be the path to the java file the user wants to instrument from src onwards e.g. src/main/java/assignmentFiles/subjectFiles/Triangle.java
 	
@@ -46,6 +46,8 @@ following features have been implemented in this submission:
 
 ## Additional Features
 
+* Although the test data generation is random only, the user can configure the random generation with the options shown above. There is also random generation for ints, doubles, strings and booleans. Strings can be alphanumeric (default) or alphabetic.
+* Any input can be generated automatically including objects and objects that take in objects as parameters to their constructors, as long as their basic foundational values are made up of ints, doubles, strings, booleans or objects with default constructors (no parameters). The CompareStrings.java example class shows this off by recursively creating cuboid objects that take in rectangle parameters.
 
 ## Limitations
 
