@@ -304,6 +304,7 @@ public class Instrument {
     //set class call and assign to a variable the result
         method.setBody(new BlockStmt());
 
+//        check if enum present, if true then add class to methodType and assert statement
         if (parsedEnum == null) {
             method.getBody().get().addStatement(new NameExpr(
                     methodType + " var = " + className + "." + methodName + "(" + args + ")"
@@ -322,8 +323,6 @@ public class Instrument {
                     "assertEquals(" + className + "." + methodType + "." + result + ", " + "var)"
             ));
         }
-
-
 
 
     }
