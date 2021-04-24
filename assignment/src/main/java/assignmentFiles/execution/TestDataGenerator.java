@@ -130,7 +130,7 @@ public class TestDataGenerator {
      * @return
      * @throws Exception
      */
-    public HashMap<String,List<List<Object>>> testGeneration(Instrument classMethods) throws Exception {
+    public HashMap<String,List<List<HashMap<String,Object>>>> testGeneration(Instrument classMethods) throws Exception {
         Set<Integer> coveredBranches = new TreeSet<>();
         HashMap<Integer,Boolean> coveredConditions = new HashMap<>();
         Set<Integer> definitiveCoveredBranches = new TreeSet<>();
@@ -139,7 +139,7 @@ public class TestDataGenerator {
 
         //the test case output file
         //format MethodName - List of (each element is a test case) of Lists (each element is a parameter for that method)
-        HashMap<String,List<List<Object>>> testCases = new HashMap<>();
+        HashMap<String,List<List<HashMap<String,Object>>>> testCases = new HashMap<>();
         //failed attempts catalogues all the times each method has failed to have its inputs generated,
         // reach more than MAX_ATTEMPTS and the program gives up with test cases for that method
         HashMap<String,Integer> failedAttempts = new HashMap<>();
@@ -245,12 +245,25 @@ public class TestDataGenerator {
                     //if the test case was a success add it to the testCases
                     if (success) {
                         System.out.println("*** new test case: " + methodEntry.getValue().toString());
-                        //                    loop adds result to methodEntry to allow asserting in testcases
+                        //loop adds result to methodEntry to allow asserting in testcases
                         for (Object t : methodEntry.getValue()) {
                             HashMap h = (HashMap) t;
                             h.put("result", result);
                         }
-                        testCases.get(currentMethod).add(methodEntry.getValue());
+
+                        //this is reconstructing the arraylist/hashmaps to put in so that its not by reference and
+                        // wont be changed with methodEntry iterating
+                        List newTestCase = new ArrayList<>();
+                        for (Object testCaseInputs : methodEntry.getValue()){
+                            HashMap<String,Object> newHashMap = new HashMap<String,Object>();
+                            HashMap<String,Object> oldHashMap = (HashMap<String,Object>) testCaseInputs;
+                            for (Map.Entry<String,Object> hashMapContents : oldHashMap.entrySet()){
+                                newHashMap.put(hashMapContents.getKey(),hashMapContents.getValue());
+                            }
+                            newTestCase.add(newHashMap);
+                        }
+                        //////
+                        testCases.get(currentMethod).add(newTestCase);
                         //also don't forget to add this test cases partner from MCDCoverage list if its MCDC coverage
                         if (testCasePartner.isPresent()) {
                             //then the test case partner is real so use testCasePartner as the key to get it as the partner
@@ -259,7 +272,20 @@ public class TestDataGenerator {
                             //find testCasePartner in MCDCoverage and add it as a test case where tsetCasePartner is the
                             //conditionSequence key to MCDCoverage
                             HashMap<String, Object> partnerInfo = (HashMap) MCDCoverage.get(methodEntry.getKey()).get(testCasePartner.get());
-                            testCases.get(currentMethod).add((List) partnerInfo.get("parameters"));
+
+                            //this is reconstructing the arraylist/hashmaps to put in so that its not by reference and
+                            // wont be changed with methodEntry iterating
+                            List<HashMap<String,Object>> newTestCasePartner = new ArrayList<>();
+                            for (Object partnerTestCaseInput : (List) partnerInfo.get("parameters")){
+                                HashMap<String,Object> newHashMap = new HashMap<String,Object>();
+                                HashMap<String,Object> oldHashMap = (HashMap<String,Object>) partnerTestCaseInput;
+                                for (Map.Entry<String,Object> hashMapContents : oldHashMap.entrySet()){
+                                    newHashMap.put(hashMapContents.getKey(),hashMapContents.getValue());
+                                }
+                                newTestCase.add(newHashMap);
+                            }
+                            //////
+                            testCases.get(currentMethod).add(newTestCasePartner);
                         }
                     }
 

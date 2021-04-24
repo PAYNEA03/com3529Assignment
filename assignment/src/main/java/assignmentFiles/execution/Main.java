@@ -48,7 +48,7 @@ public class Main {
         else {
             generator = new TestDataGenerator(cu, coverage, classMethods.methodConditions, classMethods.methodBranchBooleans);
         }
-        HashMap<String,List<List<Object>>> testCases = generator.testGeneration(classMethods);
+        HashMap<String,List<List<HashMap<String,Object>>>> testCases = generator.testGeneration(classMethods);
 
         System.out.println(testCases);
 
