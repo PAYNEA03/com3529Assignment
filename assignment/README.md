@@ -18,6 +18,7 @@ following features have been implemented in this submission:
 * Generate test case suites in terms of meeting Branch Coverage Criterion
 * Generate test case suites in terms of meeting Condition Coverage Criterion
 * Generate J-Unit test cases automatically and parse to a java test file
+* Generate configurably random integer, double, boolean, string and miscellaneous object inputs (see additional features)
 
 
 ## Technologies
@@ -47,8 +48,9 @@ following features have been implemented in this submission:
 ## Additional Features
 
 * Although the test data generation is random only, the user can configure the random generation with the options shown above. There is also random generation for ints, doubles, strings and booleans. Strings can be alphanumeric (default) or alphabetic.
-* Any input can be generated automatically including objects and objects that take in objects as parameters to their constructors, as long as their basic foundational values are made up of ints, doubles, strings, booleans or objects with default constructors (no parameters). The CompareStrings.java example class shows this off by recursively creating cuboid objects that take in rectangle parameters.
+* Any input can be generated automatically including objects and objects that take in objects as parameters to their constructors, as long as their basic foundational values are made up of ints, doubles, strings, booleans or objects with default constructors (no parameters). The CompareStrings.java example class shows this off by recursively creating Cuboid objects that take in Rectangle objects as parameters.
 
 ## Limitations
 
 * The names of the methods are used as keys in most of the hashmaps that hold the information about used for all the different types of coverage tracking and method input information for input generation. However, a huge oversight was overloading of methods, as its only the simple names (no package or full signature) of the methods used in this respect here. Therefore the program only works when passed classes without overloaded classes.
+* Switch cases and ternary if statements are not supported within the instrumentation implementation.
