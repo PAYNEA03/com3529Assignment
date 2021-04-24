@@ -2,11 +2,9 @@ package assignmentFiles.execution;
 
 import assignmentFiles.instrumentedFiles.*;
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.type.Type;
 import assignmentFiles.utils.Pair;
 
-import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -52,11 +50,10 @@ public class TestDataGenerator {
     //use currentMethod to know which one is currently being tested so that when logConditions and coveredBranch is called
     //we can store the name of the method that it resides in
     private String currentMethod;
-    //TODO map the name of the method to the condition and the branch ids that appear in them to know the size of the necessary test suites
+
     private HashMap<String,List<Integer>> conditionRecords;
     private HashMap<String,List<Integer>> branchRecords;
-    //TODO maybe get logConditions and coveredBranch to pass the methodName of the method they're called from
-    // but its VERY IMPORTANT that all of them are gotten so we may need to put it deeper inside the parser!
+
 
     private List<Object> nextParameterSet;
 
