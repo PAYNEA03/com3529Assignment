@@ -1,6 +1,5 @@
 package assignmentFiles.execution;
 
-import assignmentFiles.instrumentedFiles.Instrumented;
 import com.github.javaparser.StaticJavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 
@@ -51,7 +50,7 @@ public class Main {
         HashMap<String,List<List<HashMap<String,Object>>>> testCases = generator.testGeneration(classMethods);
 
 
-        WriteToFile.writeTestSuite(args[0],testCases,classMethods.methodDetails,classMethods.className,classMethods.parsedEnum);
+        WriteToFile.writeTestSuite(args[0],testCases, classMethods.className,classMethods.parsedEnum);
 
 
     }

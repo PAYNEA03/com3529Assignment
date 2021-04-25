@@ -7,44 +7,51 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 public class TestTriangleBranch {
 
     @Test()
-    public void classify1() {
-        Triangle.Type var = Triangle.classify(-4, -1, -6);
+    public void classifySequence10011000000010() // Sequence 1 & 0 in method name denote order each branch/condition is executed as true or false
+    {
+        Triangle.Type var = Triangle.classify(2, -3, -1);
         assertEquals(Triangle.Type.INVALID, var);
     }
 
     @Test()
-    public void classify2() {
-        Triangle.Type var = Triangle.classify(-7, 15, 0);
+    public void classifySequence11011000000010() // Sequence 1 & 0 in method name denote order each branch/condition is executed as true or false
+    {
+        Triangle.Type var = Triangle.classify(-2, 3, -1);
         assertEquals(Triangle.Type.INVALID, var);
     }
 
     @Test()
-    public void classify3() {
-        Triangle.Type var = Triangle.classify(6, 2, -6);
+    public void classifySequence11011100000010() // Sequence 1 & 0 in method name denote order each branch/condition is executed as true or false
+    {
+        Triangle.Type var = Triangle.classify(-2, -13, 14);
         assertEquals(Triangle.Type.INVALID, var);
     }
 
     @Test()
-    public void classify4() {
-        Triangle.Type var = Triangle.classify(-5, -1, 5);
+    public void classifySequence11111100000010() // Sequence 1 & 0 in method name denote order each branch/condition is executed as true or false
+    {
+        Triangle.Type var = Triangle.classify(12, -2, -7);
         assertEquals(Triangle.Type.INVALID, var);
     }
 
     @Test()
-    public void classify5() {
-        Triangle.Type var = Triangle.classify(9, 8, 12);
-        assertEquals(Triangle.Type.SCALENE, var);
-    }
-
-    @Test()
-    public void classify6() {
-        Triangle.Type var = Triangle.classify(2, 5, 5);
+    public void classifySequence11111110000111() // Sequence 1 & 0 in method name denote order each branch/condition is executed as true or false
+    {
+        Triangle.Type var = Triangle.classify(11, 11, 3);
         assertEquals(Triangle.Type.ISOSCELES, var);
     }
 
     @Test()
-    public void classify7() {
-        Triangle.Type var = Triangle.classify(10, 12, 10);
+    public void classifySequence11111111000111() // Sequence 1 & 0 in method name denote order each branch/condition is executed as true or false
+    {
+        Triangle.Type var = Triangle.classify(5, 6, 2);
+        assertEquals(Triangle.Type.SCALENE, var);
+    }
+
+    @Test()
+    public void classifySequence11111111011111() // Sequence 1 & 0 in method name denote order each branch/condition is executed as true or false
+    {
+        Triangle.Type var = Triangle.classify(7, 6, 6);
         assertEquals(Triangle.Type.SCALENE, var);
     }
 }

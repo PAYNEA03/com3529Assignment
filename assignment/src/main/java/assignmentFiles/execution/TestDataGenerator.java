@@ -205,16 +205,16 @@ public class TestDataGenerator {
                     }
 
                     // print iteration progress and pass updated hashmap with correctly generated values attached
-                    System.out.println("~~~~~~~~~~~~Call " + (i + 1) + "~~~~~~~~~");
+//                    System.out.println("~~~~~~~~~~~~Call " + (i + 1) + "~~~~~~~~~");
                     Object result = Instrumented.assignVariables(methodEntry, coveredBranches, coveredConditions);
-                    System.out.println("-> " + result);
-                    System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+//                    System.out.println("-> " + result);
+//                    System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
                     //evaluate whether these inputs are worth making into a test case
                     boolean success = false;
                     //for MCDC
                     Optional<String> testCasePartner = Optional.empty();
-
+                    String sequence = "";
                     /** COVERAGE CHECKING**/ //- are these inputs worth making a test case out of?
                     switch (coverageCriteria) {
                         case "MCDC":
@@ -223,6 +223,7 @@ public class TestDataGenerator {
                             testCasePartner = results.getRight();
 
                             success = results.getLeft();
+                            sequence = coveredConditionsIntoConditionSequence(coveredConditions);
                             break;
 
                         //Branch Coverage
@@ -230,6 +231,7 @@ public class TestDataGenerator {
                         //and if new branches were found then add these inputs as a test case
                         case "branch":
                             success = isNewBranchTestCase(coveredBranches, definitiveCoveredBranches);
+                            sequence = coveredBranchesIntoBranchSequence(coveredBranches);
                             break;
 
                         //Condition Coverage
@@ -237,6 +239,7 @@ public class TestDataGenerator {
                         //and if new conditions were found then add these inputs as a test case
                         case "condition":
                             success = isNewConditionTestCase(coveredConditions);
+                            sequence = coveredConditionsIntoConditionSequence(coveredConditions);
                     }
 
                     //if the test case was a success add it to the testCases
@@ -246,6 +249,7 @@ public class TestDataGenerator {
                         for (Object t : methodEntry.getValue()) {
                             HashMap h = (HashMap) t;
                             h.put("result", result);
+                            h.put("branch", sequence);
                         }
 
                         //this is reconstructing the arraylist/hashmaps to put in so that its not by reference and
@@ -335,7 +339,7 @@ public class TestDataGenerator {
                     }
                 }
             }
-            System.out.println(testCases.toString());
+//            System.out.println(testCases.toString());
             //before the next iteration begins - remove all methods in removedMethods from classMethods.methodDetails - i.e. are fully covered
             // so that they aren't in methodDetailsX and have any check next iteration
             for (String removedMethod : removedMethods) {
@@ -488,7 +492,7 @@ public class TestDataGenerator {
 
     private String coveredConditionsIntoConditionSequence(HashMap<Integer,Boolean> coveredConditions){
         List<Integer> currentMethodsConditions = conditionRecords.get(currentMethod);
-        String conditionSequence = currentMethod;
+        String conditionSequence = "";
         //iterate through all the conditions for the current method
         for (int i : currentMethodsConditions){
             //add on the condition - if its present in coveredConditions check if true or not
@@ -506,6 +510,7 @@ public class TestDataGenerator {
                 conditionSequence += "0";
             }
         }
+
         return conditionSequence;
     }
 

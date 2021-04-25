@@ -9,6 +9,7 @@ import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
 import com.github.javaparser.ast.body.EnumDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.Parameter;
+import com.github.javaparser.ast.comments.LineComment;
 import com.github.javaparser.ast.expr.*;
 
 import com.github.javaparser.ast.stmt.*;
@@ -277,32 +278,43 @@ public class Instrument {
     }
 
     public static void createTestCase(List item, String methodName, ClassOrInterfaceDeclaration myClass,
-                                      int count, HashMap<String, List> methodDetails, String className, EnumDeclaration parsedEnum) {
+                                      String className, EnumDeclaration parsedEnum) {
+
+
+        //get common details
+
+        HashMap testInfo = (HashMap) item.get(0);
+
+        Object result = testInfo.get("result");
+
+        String branch = (String) testInfo.get("branch");
+
 
     //setup method structure
-        MethodDeclaration method = myClass.addMethod(methodName+count);
+        MethodDeclaration method = myClass.addMethod(methodName+ "Sequence"+branch);
         method.addAnnotation("Test");
         method.setModifiers(Modifier.Keyword.PUBLIC).setType("void");
 
-    //get common details
-        HashMap methodHash = (HashMap) methodDetails.get(methodName).get(0);
-        Object methodType = methodHash.get("methodType");
-        HashMap testInfo = (HashMap) item.get(0);
-        Object result = testInfo.get("result");
-
     // iterate and assign all variables to string
         String args = "";
+        String methodType = "";
         for (Object o: item) {
             HashMap h = (HashMap) o;
-            if (args.isEmpty())
+            if (args.isEmpty()) {
                 args = h.get("value").toString();
-            else
+                methodType = h.get("methodType").toString();
+            }
+            else{
                 args = args + ", " + h.get("value").toString();
+                methodType = h.get("methodType").toString();
+            }
         }
 
 
     //set class call and assign to a variable the result
         method.setBody(new BlockStmt());
+        method.getBody().get().setComment(new LineComment("Sequence of 1 & 0 in method name denote " +
+                "order each branch/condition in test is executed as true or false"));
 
 //        check if enum present, if true then add class to methodType and assert statement
         if (parsedEnum == null) {
@@ -434,7 +446,6 @@ public class Instrument {
         @Override
         public void visit(IfStmt md, String[] param) {
             super.visit(md, param);
-
             convertIfStmt(md);
 
             parseIfStmt(md);
