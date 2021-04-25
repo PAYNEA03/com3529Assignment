@@ -2,9 +2,12 @@ package assignmentFiles.execution;
 
 import assignmentFiles.instrumentedFiles.*;
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.ImportDeclaration;
+import com.github.javaparser.ast.expr.Expression;
 import com.github.javaparser.ast.type.Type;
 import assignmentFiles.utils.Pair;
 
+import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.*;
@@ -50,10 +53,9 @@ public class TestDataGenerator {
     //use currentMethod to know which one is currently being tested so that when logConditions and coveredBranch is called
     //we can store the name of the method that it resides in
     private String currentMethod;
-
+    //maps the name of the method to the condition and the branch ids that appear in them to know the size of the necessary test suites
     private HashMap<String,List<Integer>> conditionRecords;
     private HashMap<String,List<Integer>> branchRecords;
-
 
     private List<Object> nextParameterSet;
 
@@ -128,10 +130,12 @@ public class TestDataGenerator {
      * @throws Exception
      */
     public HashMap<String,List<List<HashMap<String,Object>>>> testGeneration(Instrument classMethods) throws Exception {
+        //coveredBranches is the list of covered branches this input
         Set<Integer> coveredBranches = new TreeSet<>();
+        //coveredConditions is the complete mapping from all the conditions to whether a pair has been found for that condition
         HashMap<Integer,Boolean> coveredConditions = new HashMap<>();
+        //definitiveCoveredBranches is the complete list of all covered branches so far
         Set<Integer> definitiveCoveredBranches = new TreeSet<>();
-
 
 
         //the test case output file
@@ -205,16 +209,16 @@ public class TestDataGenerator {
                     }
 
                     // print iteration progress and pass updated hashmap with correctly generated values attached
-//                    System.out.println("~~~~~~~~~~~~Call " + (i + 1) + "~~~~~~~~~");
+                    System.out.println("~~~~~~~~~~~~Call " + (i + 1) + "~~~~~~~~~");
                     Object result = Instrumented.assignVariables(methodEntry, coveredBranches, coveredConditions);
-//                    System.out.println("-> " + result);
-//                    System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+                    System.out.println("-> " + result);
+                    System.out.println("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
 
                     //evaluate whether these inputs are worth making into a test case
                     boolean success = false;
                     //for MCDC
                     Optional<String> testCasePartner = Optional.empty();
-                    String sequence = "";
+
                     /** COVERAGE CHECKING**/ //- are these inputs worth making a test case out of?
                     switch (coverageCriteria) {
                         case "MCDC":
@@ -223,7 +227,6 @@ public class TestDataGenerator {
                             testCasePartner = results.getRight();
 
                             success = results.getLeft();
-                            sequence = coveredConditionsIntoConditionSequence(coveredConditions);
                             break;
 
                         //Branch Coverage
@@ -231,7 +234,6 @@ public class TestDataGenerator {
                         //and if new branches were found then add these inputs as a test case
                         case "branch":
                             success = isNewBranchTestCase(coveredBranches, definitiveCoveredBranches);
-                            sequence = coveredBranchesIntoBranchSequence(coveredBranches);
                             break;
 
                         //Condition Coverage
@@ -239,7 +241,6 @@ public class TestDataGenerator {
                         //and if new conditions were found then add these inputs as a test case
                         case "condition":
                             success = isNewConditionTestCase(coveredConditions);
-                            sequence = coveredConditionsIntoConditionSequence(coveredConditions);
                     }
 
                     //if the test case was a success add it to the testCases
@@ -249,7 +250,6 @@ public class TestDataGenerator {
                         for (Object t : methodEntry.getValue()) {
                             HashMap h = (HashMap) t;
                             h.put("result", result);
-                            h.put("branch", sequence);
                         }
 
                         //this is reconstructing the arraylist/hashmaps to put in so that its not by reference and
@@ -339,7 +339,6 @@ public class TestDataGenerator {
                     }
                 }
             }
-//            System.out.println(testCases.toString());
             //before the next iteration begins - remove all methods in removedMethods from classMethods.methodDetails - i.e. are fully covered
             // so that they aren't in methodDetailsX and have any check next iteration
             for (String removedMethod : removedMethods) {
@@ -490,9 +489,17 @@ public class TestDataGenerator {
         return methodConditionsWithPairs.get(currentMethod).getOrDefault(majorCondition, true);
     }
 
+    /** translates the conditions covered (with truth value) into a string which can compare the coverage between different
+     *   inputs
+     *
+     * @param coveredConditions a hashmap from condition id (integer) to what the condition was evaluated to with this input
+     * @return a string in the form methodName010101010 where the 0s and 1s are the truth value for that condition
+     *   i.e. a class with 4 conditions on a method call called doThing and this input evaluated conditions 2 and 3 as true
+     *          and the others as false = doThing0110
+     */
     private String coveredConditionsIntoConditionSequence(HashMap<Integer,Boolean> coveredConditions){
         List<Integer> currentMethodsConditions = conditionRecords.get(currentMethod);
-        String conditionSequence = "";
+        String conditionSequence = currentMethod;
         //iterate through all the conditions for the current method
         for (int i : currentMethodsConditions){
             //add on the condition - if its present in coveredConditions check if true or not
@@ -510,10 +517,16 @@ public class TestDataGenerator {
                 conditionSequence += "0";
             }
         }
-
         return conditionSequence;
     }
 
+    /** translates the branches covered by the current input into a string which can compare the coverage between different
+     *   inputs
+     *
+     * @param coveredBranches all the covered branches, any not present are deemed false (0)
+     * @returna string in the form 010101010 where the 0s and 1s are the truth value for that branch
+     *      *   i.e. a class with 4 branches on a method call with input that reached branches 1 and 4 = 1001
+     */
     private String coveredBranchesIntoBranchSequence(Set<Integer> coveredBranches){
         List<Integer> currentMethodsBranches = branchRecords.get(currentMethod);
         String branchSequence = "";
@@ -552,6 +565,14 @@ public class TestDataGenerator {
     }
 
     /******* BRANCH *******/
+    /** checks if the current generated input covers previously uncovered criteria in branch coverage and therefore
+     *   needs adding to the test suite.
+     *   also if it is added then it updates methodBranchesCovered (the branch coverage records for the current method)
+     *
+     * @param coveredBranches the branches (ids) this current input reached
+     * @param definitiveCoveredBranches all the branch ids covered so far for the whole class
+     * @return boolean whether this current test case is worth adding to the test suite (new branch covered)
+     */
     private boolean isNewBranchTestCase(Set<Integer> coveredBranches, Set<Integer> definitiveCoveredBranches){
         boolean success = false;
         for (Integer covered : coveredBranches){
@@ -565,7 +586,14 @@ public class TestDataGenerator {
         return success;
     }
 
-    /******* CONDITION COVERAGE *******/ //BROKENNNNNNNN
+    /******* CONDITION COVERAGE *******/
+    /** checks if the current generated input covers previously uncovered criteria in condition coverage and therefore
+     *   needs adding to the test suite.
+     *   also if it is added then it updates methodConditionsCovered (the condition coverage records for the current method)
+     *
+     * @param coveredConditions the resultant condition coverage from this input/potential test case
+     * @return boolean whether this current test case is worth adding to the test suite (new condition polarity covered)
+     */
     private boolean isNewConditionTestCase(HashMap<Integer,Boolean> coveredConditions){
         boolean success = false;
         HashMap<Integer,Pair<Boolean,Boolean>> currentMethodCoverage = methodConditionsCovered.get(currentMethod);
@@ -593,15 +621,22 @@ public class TestDataGenerator {
         return success;
     }
 
+    /** using the current condition coverage as recorded in methodConditionsCovered, this finds the number of conditions
+     *   covered / both polarities for all conditions
+     *
+     * @return number of condition polarities covered
+     */
     private int getFinalConditionCoverage(){
         //conditions the number of covered condition truth values successfully covered
         int conditionsCovered = 0;
         //iterate through all the methods and all the conditions and get a total number of covered condition polarities
         for (Map.Entry<String, HashMap<Integer,Pair<Boolean,Boolean>>> coverage : methodConditionsCovered.entrySet()){
             for (Map.Entry<Integer,Pair<Boolean,Boolean>> methodCoverage : coverage.getValue().entrySet()){
+                //get whether this condition as true has been covered
                 if (methodCoverage.getValue().getLeft()){
                     conditionsCovered++;
                 }
+                //get whether this condition as false has been covered
                 if (methodCoverage.getValue().getRight()){
                     conditionsCovered++;
                 }
@@ -653,9 +688,28 @@ public class TestDataGenerator {
                 System.out.println("The program found a parameter type that it is not able to generate input for " + parameterType.toString());
                 System.exit(0);
             }
-        } else {
+        }
+        else {
             //try and get it through the compilation unit
-            if (compilationUnit.getClassByName(parameterType.toString()).isPresent()) {
+            boolean found = false;
+
+            //first check if its in one of the imports - iterate through and check if the identifier matches
+            for (ImportDeclaration anImport : compilationUnit.getImports()){
+                if (anImport.getName().getIdentifier().equals(parameterType.toString())){
+                    //a matching import was found!
+                    try {
+                        cls = Class.forName(anImport.getNameAsString());
+                        found = true;
+                    } catch (ClassNotFoundException e) {
+                        e.printStackTrace();
+                        System.out.println("The program found a parameter type that it is not able to generate input for " + parameterType.toString());
+                    }
+
+                }
+            }
+
+            //otherwise try and get it as an inner class
+            if (compilationUnit.getClassByName(parameterType.toString()).isPresent() && !found) {
                 System.out.println("found class in the compilation unit: "+parameterType.toString());
                 if (compilationUnit.getClassByName(parameterType.toString()).get().getFullyQualifiedName().isPresent()) {
                     System.out.println("found fully qualified class name in the compilation unit: "+compilationUnit.getClassByName(parameterType.toString()).get().getFullyQualifiedName().get());
@@ -671,6 +725,8 @@ public class TestDataGenerator {
             }
         }
 
+        //send the found class through to be constructed and returned as an input
+        // (nothing is returned if cls is still null or it fails to construct)
         return constructOther(cls);
     }
 
@@ -714,7 +770,7 @@ public class TestDataGenerator {
                         default:
                             Optional<Object> newOther = constructOther(params[i]);
                             if (newOther.isPresent()){
-                                consInputs[i] = newOther;
+                                consInputs[i] = newOther.get();
                             }
                             else {
                                 success = false;
@@ -736,6 +792,10 @@ public class TestDataGenerator {
                         e.printStackTrace();
                     } catch (InvocationTargetException e) {
                         e.printStackTrace();
+                    } catch (IllegalArgumentException e) {
+                        e.printStackTrace();
+                        System.out.println("The system failed to construct an input parameter of type: "+clazz.getName());
+                        System.out.println("Reason: generated arguments illegal");
                     }
                 }
             }
