@@ -1,7 +1,5 @@
 package assignmentFiles.instrumentedFiles;
 
-import assignmentFiles.subjectFiles.Cuboid;
-import assignmentFiles.subjectFiles.Rectangle;
 import java.util.TreeSet;
 import java.util.Set;
 import java.util.HashMap;
@@ -11,181 +9,165 @@ import assignmentFiles.execution.*;
 
 public class Instrumented {
 
-    public enum Similarity {
-
-        COMPLETELY_DIFFERENT,
-        ONE_SIDE_SAME,
-        TWO_SIDES_SAME,
-        SAME_AREA,
-        SAME_VOLUME,
-        SAME_CUBOID
-    }
-
-    public static Similarity compareCuboids(Cuboid cuboid1, Cuboid cuboid2, Set<Integer> coveredBranches, HashMap<Integer, Boolean> coveredConditions) {
-        if (cuboid1.cube && cuboid2.cube) {
+    public static int daysBetweenTwoDates(int year1, int month1, int day1, int year2, int month2, int day2, Set<Integer> coveredBranches, HashMap<Integer, Boolean> coveredConditions) {
+        int days = 0;
+        // sanitize month inputs
+        if (TestDataGenerator.logCondition(1, month1 < 1, coveredConditions)) {
             TestDataGenerator.coveredBranch(1, coveredBranches);
-            return Similarity.SAME_CUBOID;
+            month1 = 1;
         } else {
             TestDataGenerator.coveredBranch(2, coveredBranches);
         }
-        int sides_same = 0;
-        if (cuboid1.length == cuboid2.length) {
+        if (TestDataGenerator.logCondition(2, month2 < 1, coveredConditions)) {
             TestDataGenerator.coveredBranch(3, coveredBranches);
-            sides_same++;
+            month2 = 1;
         } else {
             TestDataGenerator.coveredBranch(4, coveredBranches);
         }
-        if (cuboid1.width == cuboid2.width) {
+        if (TestDataGenerator.logCondition(3, month1 > 12, coveredConditions)) {
             TestDataGenerator.coveredBranch(5, coveredBranches);
-            sides_same++;
+            month1 = 12;
         } else {
             TestDataGenerator.coveredBranch(6, coveredBranches);
         }
-        if (cuboid1.height == cuboid2.height) {
+        if (TestDataGenerator.logCondition(4, month2 > 12, coveredConditions)) {
             TestDataGenerator.coveredBranch(7, coveredBranches);
-            sides_same++;
+            month2 = 12;
         } else {
             TestDataGenerator.coveredBranch(8, coveredBranches);
         }
-        if (cuboid1.width == cuboid2.height) {
+        // sanitize day inputs
+        if (TestDataGenerator.logCondition(5, day1 < 1, coveredConditions)) {
             TestDataGenerator.coveredBranch(9, coveredBranches);
-            sides_same++;
+            day1 = 1;
         } else {
             TestDataGenerator.coveredBranch(10, coveredBranches);
         }
-        if (cuboid1.height == cuboid2.width) {
+        if (TestDataGenerator.logCondition(6, day2 < 1, coveredConditions)) {
             TestDataGenerator.coveredBranch(11, coveredBranches);
-            sides_same++;
+            day2 = 1;
         } else {
             TestDataGenerator.coveredBranch(12, coveredBranches);
         }
-        if (cuboid1.length == cuboid2.width) {
+        if (TestDataGenerator.logCondition(7, day1 > daysInMonth(month1, year1, coveredBranches, coveredConditions), coveredConditions)) {
             TestDataGenerator.coveredBranch(13, coveredBranches);
-            sides_same++;
+            day1 = daysInMonth(month1, year1, coveredBranches, coveredConditions);
         } else {
             TestDataGenerator.coveredBranch(14, coveredBranches);
         }
-        if (cuboid1.length == cuboid2.height) {
+        if (TestDataGenerator.logCondition(8, day2 > daysInMonth(month2, year2, coveredBranches, coveredConditions), coveredConditions)) {
             TestDataGenerator.coveredBranch(15, coveredBranches);
-            sides_same++;
+            day2 = daysInMonth(month2, year2, coveredBranches, coveredConditions);
         } else {
             TestDataGenerator.coveredBranch(16, coveredBranches);
         }
-        if (cuboid1.width == cuboid2.length) {
+        // swap dates if year2, month2, day2 is before year1, month1, day1
+        if ((TestDataGenerator.logCondition(9, year2 < year1, coveredConditions)) || (TestDataGenerator.logCondition(10, year2 == year1, coveredConditions) && TestDataGenerator.logCondition(11, month2 < month1, coveredConditions)) || (TestDataGenerator.logCondition(12, year2 == year1, coveredConditions) && TestDataGenerator.logCondition(13, month2 == month1, coveredConditions) && TestDataGenerator.logCondition(14, day2 < day1, coveredConditions))) {
             TestDataGenerator.coveredBranch(17, coveredBranches);
-            sides_same++;
+            int t = month2;
+            month2 = month1;
+            month1 = t;
+            t = day2;
+            day2 = day1;
+            day1 = t;
+            t = year2;
+            year2 = year1;
+            year1 = t;
         } else {
             TestDataGenerator.coveredBranch(18, coveredBranches);
         }
-        if (cuboid1.height == cuboid2.length) {
-            TestDataGenerator.coveredBranch(19, coveredBranches);
-            sides_same++;
-        } else {
-            TestDataGenerator.coveredBranch(20, coveredBranches);
-        }
-        if (TestDataGenerator.logCondition(3, sides_same >= 3, coveredConditions)) {
-            TestDataGenerator.coveredBranch(25, coveredBranches);
-            return Similarity.SAME_CUBOID;
-        } else if (TestDataGenerator.logCondition(2, sides_same == 2, coveredConditions)) {
-            TestDataGenerator.coveredBranch(24, coveredBranches);
-            return Similarity.TWO_SIDES_SAME;
-        } else if (TestDataGenerator.logCondition(1, sides_same == 1, coveredConditions)) {
+        // calculate days
+        if (TestDataGenerator.logCondition(17, month1 == month2, coveredConditions) && TestDataGenerator.logCondition(18, year1 == year2, coveredConditions)) {
             TestDataGenerator.coveredBranch(23, coveredBranches);
-            return Similarity.ONE_SIDE_SAME;
-        } else if (cuboid1.length * cuboid1.width * cuboid1.height == cuboid2.length * cuboid2.width * cuboid2.height) {
-            TestDataGenerator.coveredBranch(21, coveredBranches);
-            return Similarity.SAME_VOLUME;
+            days = day2 - day1;
         } else {
-            TestDataGenerator.coveredBranch(22, coveredBranches);
+            TestDataGenerator.coveredBranch(24, coveredBranches);
+            days += daysInMonth(month1, year1, coveredBranches, coveredConditions) - day1;
+            days += day2;
+            if (TestDataGenerator.logCondition(16, year1 == year2, coveredConditions)) {
+                TestDataGenerator.coveredBranch(21, coveredBranches);
+                int month = month1 + 1;
+                while (TestDataGenerator.logCondition(22, month < month2, coveredConditions)) {
+                    TestDataGenerator.coveredBranch(28, coveredBranches);
+                    days += daysInMonth(month, year1, coveredBranches, coveredConditions);
+                    month++;
+                }
+            } else {
+                TestDataGenerator.coveredBranch(22, coveredBranches);
+                int year;
+                int month = month1 + 1;
+                while (TestDataGenerator.logCondition(19, month <= 12, coveredConditions)) {
+                    TestDataGenerator.coveredBranch(25, coveredBranches);
+                    days += daysInMonth(month, year1, coveredBranches, coveredConditions);
+                    month++;
+                }
+                month = 1;
+                while (TestDataGenerator.logCondition(20, month < month2, coveredConditions)) {
+                    TestDataGenerator.coveredBranch(26, coveredBranches);
+                    days += daysInMonth(month, year2, coveredBranches, coveredConditions);
+                    month++;
+                }
+                year = year1 + 1;
+                while (TestDataGenerator.logCondition(21, year < year2, coveredConditions)) {
+                    TestDataGenerator.coveredBranch(27, coveredBranches);
+                    days += 365;
+                    if (TestDataGenerator.logCondition(15, isLeapYear(year, coveredBranches, coveredConditions), coveredConditions)) {
+                        TestDataGenerator.coveredBranch(19, coveredBranches);
+                        days++;
+                    } else {
+                        TestDataGenerator.coveredBranch(20, coveredBranches);
+                    }
+                    year++;
+                }
+            }
         }
-        return Similarity.COMPLETELY_DIFFERENT;
+        return days;
     }
 
-    public static Similarity compareRectangles(Rectangle rect1, Rectangle rect2, Set<Integer> coveredBranches, HashMap<Integer, Boolean> coveredConditions) {
-        int sides_same = 0;
-        if (rect1.side1 == rect2.side1) {
-            TestDataGenerator.coveredBranch(33, coveredBranches);
-            sides_same++;
-            if (rect1.side2 == rect2.side2) {
-                TestDataGenerator.coveredBranch(31, coveredBranches);
-                sides_same++;
-            } else {
-                TestDataGenerator.coveredBranch(32, coveredBranches);
-            }
-        } else if (rect1.side1 == rect2.side2) {
-            TestDataGenerator.coveredBranch(30, coveredBranches);
-            sides_same++;
-            if (rect1.side2 == rect2.side1) {
-                TestDataGenerator.coveredBranch(28, coveredBranches);
-                sides_same++;
-            } else {
-                TestDataGenerator.coveredBranch(29, coveredBranches);
-            }
-        } else if (rect1.area == rect2.area) {
-            TestDataGenerator.coveredBranch(26, coveredBranches);
-            return Similarity.SAME_AREA;
-        } else {
-            TestDataGenerator.coveredBranch(27, coveredBranches);
-        }
-        if (TestDataGenerator.logCondition(5, sides_same == 1, coveredConditions)) {
-            TestDataGenerator.coveredBranch(36, coveredBranches);
-            return Similarity.ONE_SIDE_SAME;
-        } else if (TestDataGenerator.logCondition(4, sides_same == 2, coveredConditions)) {
-            TestDataGenerator.coveredBranch(34, coveredBranches);
-            return Similarity.TWO_SIDES_SAME;
-        } else {
-            TestDataGenerator.coveredBranch(35, coveredBranches);
-        }
-        return Similarity.COMPLETELY_DIFFERENT;
+    public static boolean isLeapYear(int year, Set<Integer> coveredBranches, HashMap<Integer, Boolean> coveredConditions) {
+        return (year % 4 == 0 && year % 100 != 0) || year % 400 == 0;
     }
 
-    static int hammingDist(String str1, String str2, Set<Integer> coveredBranches, HashMap<Integer, Boolean> coveredConditions) {
-        int i = 0, count = 0;
-        while (TestDataGenerator.logCondition(6, i < str1.length(), coveredConditions)) {
-            TestDataGenerator.coveredBranch(39, coveredBranches);
-            if (str1.charAt(i) != str2.charAt(i)) {
-                TestDataGenerator.coveredBranch(37, coveredBranches);
-                count++;
-            } else {
-                TestDataGenerator.coveredBranch(38, coveredBranches);
-            }
-            i++;
-        }
-        return count;
+    public static int daysInMonth(int month, int year, Set<Integer> coveredBranches, HashMap<Integer, Boolean> coveredConditions) {
+        int[] daysInMonthNonLeapYear = { 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 };
+        return month == 2 && isLeapYear(year, coveredBranches, coveredConditions) ? 29 : daysInMonthNonLeapYear[month - 1];
     }
 
     public static Object assignVariables(Map.Entry<String, List> paramList, Set<Integer> coveredBranches, HashMap<Integer, Boolean> coveredConditions) {
         Object result = "empty";
         String methodName = paramList.getKey();
         List methodParams = paramList.getValue();
-        if (methodName.equals("hammingDist")) {;
-        System.out.println("********Parsing Method: hammingDist ****");;
-        String str1 = (String) TestDataGenerator.assignValues("str1", methodParams);
-        String str2 = (String) TestDataGenerator.assignValues("str2", methodParams);
+        if (methodName.equals("daysInMonth")) {;
+        System.out.println("********Parsing Method: daysInMonth ****");;
+        int month = (int) TestDataGenerator.assignValues("month", methodParams);
+        int year = (int) TestDataGenerator.assignValues("year", methodParams);
         try {;
-        result = hammingDist(str1, str2, coveredBranches, coveredConditions);
+        result = daysInMonth(month, year, coveredBranches, coveredConditions);
         } catch (Exception e) {;
         System.out.println(e);
         System.out.println("Something went wrong passing values to function");
         };
         };
-        if (methodName.equals("compareRectangles")) {;
-        System.out.println("********Parsing Method: compareRectangles ****");;
-        Rectangle rect1 = (Rectangle) TestDataGenerator.assignValues("rect1", methodParams);
-        Rectangle rect2 = (Rectangle) TestDataGenerator.assignValues("rect2", methodParams);
+        if (methodName.equals("isLeapYear")) {;
+        System.out.println("********Parsing Method: isLeapYear ****");;
+        int year = (int) TestDataGenerator.assignValues("year", methodParams);
         try {;
-        result = compareRectangles(rect1, rect2, coveredBranches, coveredConditions);
+        result = isLeapYear(year, coveredBranches, coveredConditions);
         } catch (Exception e) {;
         System.out.println(e);
         System.out.println("Something went wrong passing values to function");
         };
         };
-        if (methodName.equals("compareCuboids")) {;
-        System.out.println("********Parsing Method: compareCuboids ****");;
-        Cuboid cuboid1 = (Cuboid) TestDataGenerator.assignValues("cuboid1", methodParams);
-        Cuboid cuboid2 = (Cuboid) TestDataGenerator.assignValues("cuboid2", methodParams);
+        if (methodName.equals("daysBetweenTwoDates")) {;
+        System.out.println("********Parsing Method: daysBetweenTwoDates ****");;
+        int year1 = (int) TestDataGenerator.assignValues("year1", methodParams);
+        int month1 = (int) TestDataGenerator.assignValues("month1", methodParams);
+        int day1 = (int) TestDataGenerator.assignValues("day1", methodParams);
+        int year2 = (int) TestDataGenerator.assignValues("year2", methodParams);
+        int month2 = (int) TestDataGenerator.assignValues("month2", methodParams);
+        int day2 = (int) TestDataGenerator.assignValues("day2", methodParams);
         try {;
-        result = compareCuboids(cuboid1, cuboid2, coveredBranches, coveredConditions);
+        result = daysBetweenTwoDates(year1, month1, day1, year2, month2, day2, coveredBranches, coveredConditions);
         } catch (Exception e) {;
         System.out.println(e);
         System.out.println("Something went wrong passing values to function");

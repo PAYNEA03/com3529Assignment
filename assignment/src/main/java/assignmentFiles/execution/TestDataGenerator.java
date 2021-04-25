@@ -218,6 +218,7 @@ public class TestDataGenerator {
                     boolean success = false;
                     //for MCDC
                     Optional<String> testCasePartner = Optional.empty();
+                    String sequence = "";
 
                     /** COVERAGE CHECKING**/ //- are these inputs worth making a test case out of?
                     switch (coverageCriteria) {
@@ -227,6 +228,8 @@ public class TestDataGenerator {
                             testCasePartner = results.getRight();
 
                             success = results.getLeft();
+                            sequence = coveredConditionsIntoConditionSequence(coveredConditions);
+
                             break;
 
                         //Branch Coverage
@@ -234,6 +237,8 @@ public class TestDataGenerator {
                         //and if new branches were found then add these inputs as a test case
                         case "branch":
                             success = isNewBranchTestCase(coveredBranches, definitiveCoveredBranches);
+                            sequence = coveredBranchesIntoBranchSequence(coveredBranches);
+
                             break;
 
                         //Condition Coverage
@@ -241,6 +246,8 @@ public class TestDataGenerator {
                         //and if new conditions were found then add these inputs as a test case
                         case "condition":
                             success = isNewConditionTestCase(coveredConditions);
+                            sequence = coveredConditionsIntoConditionSequence(coveredConditions);
+
                     }
 
                     //if the test case was a success add it to the testCases
@@ -250,6 +257,7 @@ public class TestDataGenerator {
                         for (Object t : methodEntry.getValue()) {
                             HashMap h = (HashMap) t;
                             h.put("result", result);
+                            h.put("branch", sequence);
                         }
 
                         //this is reconstructing the arraylist/hashmaps to put in so that its not by reference and
@@ -369,8 +377,6 @@ public class TestDataGenerator {
 
         System.out.println();
 
-        //print test cases
-        //System.out.println(testCases.toString());
 
         return testCases;
     }
